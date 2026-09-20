@@ -1,0 +1,1 @@
+(() => { window.NeonHookCollision=window.ArcadeCollision; })();

@@ -1,0 +1,30 @@
+(() => {
+  class NeonHookRenderer {
+    constructor(canvas,config){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.config=config;this.dpr=1;this.width=390;this.height=844;this.particles=new window.ArcadeParticles();this.time=0;this.resize()}
+    resize(){this.dpr=Math.min(window.devicePixelRatio||1,2);this.width=window.innerWidth;this.height=window.innerHeight;this.canvas.width=Math.round(this.width*this.dpr);this.canvas.height=Math.round(this.height*this.dpr);this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0)}
+    reset(){this.particles.clear();this.time=0}
+    emit(x,y,color,count=14){const item=window.TelePlayShop?.equippedForGame?.('neon-hook','particles');this.particles.spawn(x,y,item?.visual?.color||item?.visualData?.color||color,count)}
+    visual(slot=null){return window.TelePlayShop?.visualForGame?.('neon-hook',slot)||{color:'#5bf3ff',accent:'#a879ff'}}
+    worldToScreen(x,y,camera){const z=camera.zoom||1,ax=camera.anchorX||110,ay=camera.anchorY||300;return [ax+(x-(camera.x+ax))*z,ay+(y-(camera.y+ay))*z]}
+    render(snapshot,level){
+      const c=this.ctx,w=this.width,h=this.height,cam=snapshot.camera,s=.95;this.time+=.016;this.particles.update(.016);c.save();
+      const shake=cam.shake||0;if(shake)c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+      const background=this.visual('backgrounds'),bg=c.createLinearGradient(0,0,w,h);bg.addColorStop(0,this.fade(background?.accent||'#16173d',.34));bg.addColorStop(.45,this.fade(background?.color||'#080a22',.16));bg.addColorStop(1,'#03040d');c.fillStyle=bg;c.fillRect(0,0,w,h);
+      this.drawStars(c,w,h,cam);this.drawGrid(c,w,h,cam);this.drawWorld(c,level,snapshot,cam);this.drawTrail(c,snapshot,cam);this.drawHook(c,snapshot,cam);this.drawCore(c,snapshot,cam);this.drawParticles(c);c.restore();
+    }
+    fade(value,alpha){const raw=String(value||'').replace('#','');if(raw.length!==6)return value;const n=parseInt(raw,16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${alpha})`}
+    drawStars(c,w,h,cam){const visual=this.visual('backgrounds');for(let i=0;i<36;i++){const x=((i*97-cam.x*.08)%(w+80)+w+80)%(w+80)-40,y=((i*53-cam.y*.04)%(h+100)+h+100)%(h+100)-50,r=i%7===0?1.7:1;c.fillStyle=i%3?this.fade(visual?.color||'#66dfff',.42):this.fade(visual?.accent||'#d39cff',.58);c.fillRect(x,y,r,r)}}
+    drawGrid(c,w,h,cam){const visual=this.visual('backgrounds');c.save();c.strokeStyle=this.fade(visual?.accent||'#5963bd',.15);c.lineWidth=1;const step=80;for(let x=-step-(cam.x%step);x<w+step;x+=step){c.beginPath();c.moveTo(x,0);c.lineTo(x+cam.y*.08,h);c.stroke()}for(let y=-step-(cam.y%step);y<h+step;y+=step){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}c.restore()}
+    drawWorld(c,level,snapshot,cam){
+      const z=cam.zoom||1;const [fx,fy]=this.worldToScreen(level.finish.x,level.finish.y,cam);c.save();c.translate(fx,fy);const pulse=1+Math.sin(this.time*4)*.08;c.shadowColor='#5bf3ff';c.shadowBlur=24;c.strokeStyle='#5bf3ff';c.lineWidth=5*z;c.beginPath();c.arc(0,0,level.finish.radius*pulse*z,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#ff5bc8';c.lineWidth=2*z;c.beginPath();c.arc(0,0,(level.finish.radius-13)*z,0,Math.PI*2);c.stroke();c.restore();
+      level.objects.forEach(o=>{const [x,y]=this.worldToScreen(o.x,o.y,cam);if(x<-160||x>this.width+160)return;c.save();c.shadowColor='#ff5b8c';c.shadowBlur=18;c.fillStyle='#ff5b8c99';c.strokeStyle='#ffb4d3';c.lineWidth=2*z;c.beginPath();c.roundRect(x,y,o.width*z,o.height*z,8*z);c.fill();c.stroke();c.restore()});
+      level.hookPoints.forEach(point=>{const [x,y]=this.worldToScreen(point.x,point.y,cam);if(x<-80||x>this.width+80)return;c.save();const p=1+Math.sin(this.time*5+point.x)*.1;c.shadowColor='#a879ff';c.shadowBlur=20;c.strokeStyle='#a879ff';c.lineWidth=3*z;c.beginPath();c.arc(x,y,point.radius*p*z,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#5bf3ff';c.lineWidth=2*z;c.beginPath();c.arc(x,y,8*z,0,Math.PI*2);c.stroke();c.restore()});
+      level.coins.forEach(coin=>{if(coin.collected)return;const [x,y]=this.worldToScreen(coin.x,coin.y,cam);if(x<-30||x>this.width+30)return;c.save();c.translate(x,y);c.scale((.65+Math.abs(Math.cos(this.time*5+coin.x))*.35)*z,z);c.shadowColor=coin.risk==='risk'?'#ff5bc8':'#ffd66e';c.shadowBlur=16;c.fillStyle=coin.risk==='risk'?'#ff71cf':'#ffd66e';c.beginPath();c.arc(0,0,10,0,Math.PI*2);c.fill();c.strokeStyle='#fff4bd';c.lineWidth=2;c.stroke();c.restore()});
+    }
+    drawTrail(c,snapshot,cam){if(snapshot.trail.length<2)return;const visual=this.visual('particles')||this.visual('hooks');c.save();c.lineCap='round';for(let i=1;i<snapshot.trail.length;i++){const a=snapshot.trail[i-1],b=snapshot.trail[i],[ax,ay]=this.worldToScreen(a.x,a.y,cam),[bx,by]=this.worldToScreen(b.x,b.y,cam);c.globalAlpha=i/snapshot.trail.length*.42;c.strokeStyle=i%2?visual.color:visual.accent;c.lineWidth=2+i/snapshot.trail.length*4;c.beginPath();c.moveTo(ax,ay);c.lineTo(bx,by);c.stroke()}c.restore()}
+    drawHook(c,snapshot,cam){if(!snapshot.hook)return;const visual=this.visual('hooks'),[px,py]=this.worldToScreen(snapshot.player.x,snapshot.player.y,cam),[hx,hy]=this.worldToScreen(snapshot.hook.point.x,snapshot.hook.point.y,cam);c.save();c.shadowColor=visual.color;c.shadowBlur=13;c.strokeStyle=visual.color;c.lineWidth=2;c.beginPath();c.moveTo(px,py);c.lineTo(hx,hy);c.stroke();c.strokeStyle=visual.accent;c.lineWidth=5;c.globalAlpha=.45;c.beginPath();c.moveTo(px,py);c.lineTo(hx,hy);c.stroke();c.restore()}
+    drawCore(c,snapshot,cam){const visual=this.visual('hooks'),[x,y]=this.worldToScreen(snapshot.player.x,snapshot.player.y,cam),z=cam.zoom||1;c.save();const pulse=1+Math.sin(this.time*8)*.08;c.translate(x,y);c.rotate(snapshot.player.vx*.0007);c.shadowColor=visual.color;c.shadowBlur=30*z;c.fillStyle=visual.color;c.beginPath();c.arc(0,0,17*pulse*z,0,Math.PI*2);c.fill();c.shadowBlur=0;c.fillStyle='#fff';c.beginPath();c.arc(-5*z,-5*z,5*z,0,Math.PI*2);c.fill();c.strokeStyle=visual.accent;c.lineWidth=3*z;c.beginPath();c.arc(0,0,25*z,0,Math.PI*2);c.stroke();c.restore()}
+    drawParticles(c){this.particles.render(c)}
+  }
+  window.NeonHookRenderer=NeonHookRenderer;
+})();

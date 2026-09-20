@@ -1,0 +1,4 @@
+(() => {
+  const NeonRaceGarage={create(CARS){const data=()=>window.TelePlayCore.PlayerData,profile=()=>data().profile('neonRace');return {get best(){return Number(data().game('neon-race').bestScore||profile().best||0)},set best(value){data().record('neon-race',{bestScore:Number(value)});data().updateProfile('neonRace',{best:Number(value)})},get coins(){return window.TelePlayCore.CurrencyManager?.getBalance?.() ?? data().coins()},get ownedCars(){const cars=profile().ownedCars;return Array.isArray(cars)&&cars.length?cars:['spark']},set ownedCars(value){data().updateProfile('neonRace',{ownedCars:value})},get selectedCar(){const id=profile().selectedCar||'spark';return CARS[id]?id:'spark'},set selectedCar(value){data().updateProfile('neonRace',{selectedCar:value})}}}};
+  window.NeonRaceGarage=NeonRaceGarage;
+})();

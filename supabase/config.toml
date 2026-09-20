@@ -1,0 +1,5 @@
+project_id = "hmggjvnvrpijkbeojjgp"
+
+[functions.teleplay-api]
+# Telegram initData is verified inside the handler, not as a Supabase JWT.
+verify_jwt = false
