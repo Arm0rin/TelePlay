@@ -21,7 +21,7 @@
     ['hoop-shot','Hoop Shot','Собери идеальную серию','sport','hoop','#ff9b55','HoopShotGame','sports'],
     ['stunt-ride','Stunt Ride','Безумные трассы и физика','racing','ramp','#c2ed6f','StuntRideGame','canvas']
   ];
-  const games = entries.map(([id,title,subtitle,category,icon,color,component,engineType]) => ({ id,title,subtitle,category,icon,thumbnail:icon,color,component,engineType,status:['neon-race','block-grid','beat-dash','neon-hook','penalty-duel'].includes(id)?'available':'coming-soon',featured:id==='neon-race' }));
+  const games = entries.map(([id,title,subtitle,category,icon,color,component,engineType]) => ({ id,title,subtitle,category,icon,thumbnail:icon,color,component,engineType,status:['neon-race','block-grid','beat-dash','neon-hook','penalty-duel','core-drop'].includes(id)?'available':'coming-soon',featured:id==='neon-race' }));
   const car = '<rect x="66" y="24" width="30" height="66" rx="10" fill="currentColor"/><path d="M71 39h20l-2 17H73z" fill="#11162b"/><path d="M71 76h20M70 30h6m11 0h5" stroke="#fff"/>';
   const art = {
     car:'<path d="M43 0 24 120M116 0l20 120M80 0v16m0 84v20"/>'+car,
