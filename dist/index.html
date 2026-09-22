@@ -237,6 +237,37 @@
       <button class="play-button large" id="hookReplay">Играть снова</button><button class="play-button large hook-next" id="hookNext" hidden>Следующий уровень</button><button class="text-button" id="hookHome">На главную</button>
     </div>
   </section>
+  <section class="core-drop-screen" id="coreDropScreen" aria-label="Core Drop" hidden>
+    <div class="core-drop-inner">
+      <header class="core-drop-hud">
+        <button class="icon-button" id="coreDropClose" aria-label="На главную">×</button>
+        <div class="core-drop-brand"><small>TELEPLAY · АРКАДЫ</small><b>Core Drop</b><span id="coreDropZone">ВЕРХНЯЯ КОРА</span></div>
+        <div class="core-drop-depth"><small>ГЛУБИНА</small><b id="coreDropDepth">0 м</b></div>
+        <button class="icon-button" id="coreDropPause" aria-label="Пауза">Ⅱ</button>
+      </header>
+      <div class="core-drop-bars">
+        <div><span><b>СТАБИЛЬНОСТЬ</b><strong id="coreDropStabilityText">100%</strong></span><i><em id="coreDropStabilityBar"></em></i></div>
+        <div><span><b>ЗАРЯД ИМПУЛЬСА</b><strong id="coreDropChargeText">100%</strong></span><i><em id="coreDropChargeBar"></em></i></div>
+      </div>
+      <div class="core-drop-stats"><span>СЧЁТ <b id="coreDropScore">0</b></span><span>МАССА <b id="coreDropMass">1</b></span><span id="coreDropComboStat">КОМБО <b id="coreDropCombo">×1</b></span></div>
+      <canvas id="coreDropCanvas"></canvas>
+      <div class="core-drop-toast" id="coreDropToast" aria-live="polite"></div>
+      <button class="core-drop-impulse" id="coreDropImpulse" type="button" disabled><span>◆</span><b>ИМПУЛЬС</b><small>30%</small></button>
+      <div class="core-drop-hint">ВЕДИ ЯДРО ВЛЕВО И ВПРАВО · ПРОБИВАЙСЯ ГЛУБЖЕ</div>
+    </div>
+    <div class="start-panel core-drop-overlay" id="coreDropStart">
+      <span class="panel-kicker">TELEPLAY · АРКАДЫ</span><h2>Core<br>Drop</h2>
+      <p>Пробивайся через недра планеты.<br>Собирай энергию. Рискуй глубже.</p>
+      <button class="play-button large" id="coreDropStartButton">Начать падение</button>
+      <div class="core-drop-menu-record"><span>ЛУЧШИЙ СЧЁТ <b id="coreDropMenuBest">0</b></span><span>ГЛУБИНА <b id="coreDropMenuDepth">0 м</b></span></div>
+    </div>
+    <div class="start-panel result-panel core-drop-overlay" id="coreDropResult" hidden>
+      <span class="panel-kicker" data-result="kicker">ЯДРО РАЗРУШЕНО</span><h2 data-result="title">Ядро<br>разрушено</h2>
+      <div class="result-score"><small>РЕЗУЛЬТАТ</small><b data-result="score">0</b></div>
+      <div class="result-details core-drop-result-details"><span>Лучший результат <b data-result="best">0</b></span><span>Получено <b data-result="reward">+0 🪙</b></span><span>Глубина <b data-result="depth">0 м</b></span><span>Масса <b data-result="mass">0</b></span><span>Комбо <b data-result="maxCombo">×1</b></span><span>Осколки <b data-result="shards">0</b></span></div>
+      <button class="play-button large" id="coreDropReplay">Падать снова</button><button class="text-button" id="coreDropHome">На главную</button>
+    </div>
+  </section>
   <section class="penalty-screen" id="penaltyDuelScreen" aria-label="Penalty Duel" hidden>
     <div class="penalty-inner">
       <header class="penalty-hud">
@@ -333,6 +364,7 @@
   <script src="./games/neon-hook/engine/game-loop.js"></script>
   <script src="./games/neon-hook/renderer.js"></script>
   <script src="./games/neon-hook/game.js"></script>
+  <script src="./games/core-drop/game.js"></script>
   <script src="./games/penalty-duel/config.js"></script>
   <script src="./games/penalty-duel/shop/shop.js"></script>
   <script src="./games/penalty-duel/sports-engine/core/trajectory.js"></script>
