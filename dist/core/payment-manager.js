@@ -12,18 +12,19 @@
     try {
       const invoice = await core().DataProvider.createPaymentInvoice(packageId, key);
       const invoiceUrl = invoice?.invoiceUrl || invoice?.payment?.invoiceUrl;
-      if (!invoiceUrl) return { ok: false, reason: 'invoice_unavailable', payment: invoice?.payment || null };
+      if (!invoiceUrl) { core().Analytics?.track?.('payment_invoice_unavailable', null, { productId: packageId }); return { ok: false, reason: 'invoice_unavailable', payment: invoice?.payment || null }; }
       core().Analytics?.track?.('payment_started', null, { productId: packageId, paymentId: invoice?.payment?.id || null });
       const webApp = window.Telegram?.WebApp;
-      if (typeof webApp?.openInvoice !== 'function') return { ok: false, reason: 'telegram_invoice_unavailable', payment: invoice?.payment || null };
+      if (typeof webApp?.openInvoice !== 'function') { core().Analytics?.track?.('payment_invoice_unavailable', null, { productId: packageId, platform: 'non_telegram' }); return { ok: false, reason: 'telegram_invoice_unavailable', payment: invoice?.payment || null }; }
       return await new Promise(resolve => {
         try {
           webApp.openInvoice(invoiceUrl, async status => {
             // Telegram's client status is only a UI hint. The webhook is the
             // authority; never mutate Gems from this callback.
             if (status === 'paid' || status === 'pending') {
-              for (let attempt = 0; attempt < 4; attempt += 1) { await wait(800 * (attempt + 1)); const rows = await history().catch(() => []); const payment = rows.find(item => item.id === invoice?.payment?.id); if (payment?.status === 'completed') { await refresh(); return resolve({ ok: true, status: 'completed', payment }); } if (payment?.status === 'failed' || payment?.status === 'refunded') return resolve({ ok: false, status: payment.status, payment }); }
+              for (let attempt = 0; attempt < 4; attempt += 1) { await wait(800 * (attempt + 1)); const rows = await history().catch(() => []); const payment = rows.find(item => item.id === invoice?.payment?.id); if (payment?.status === 'completed') { await refresh(); core().Analytics?.track?.('payment_completed', null, { productId: packageId, paymentId: payment.id, amount: payment.amount, currency: payment.currency }); return resolve({ ok: true, status: 'completed', payment }); } if (payment?.status === 'failed' || payment?.status === 'refunded') { core().Analytics?.track?.('payment_failed', null, { productId: packageId, paymentId: payment.id, status: payment.status }); return resolve({ ok: false, status: payment.status, payment }); } }
             }
+            if (status === 'cancelled') core().Analytics?.track?.('payment_cancelled', null, { productId: packageId, paymentId: invoice?.payment?.id || null });
             resolve({ ok: status === 'paid', status, payment: invoice.payment });
           });
         } catch (error) {

@@ -112,7 +112,32 @@
   };
   const security = () => ({ proofs: [...globalRewardProofs], results: [...globalGameResults], fraudEvents: [...globalFraudEvents] });
   const payments = () => [...globalPayments];
-  const AdminData = { currentPlayer, dashboard, playerRows, loadPlayers, loadGlobal, loadPlayer, selectedPlayer, globalPlayers: () => [...globalPlayers], globalStatus: () => ({ ...globalLoad }), economy, games, shop, security, payments, events: () => backendMode() ? [...globalEvents].reverse() : (window.TelePlayAdmin?.Log?.events?.() || []), actions: () => backendMode() ? [...globalActions].reverse() : (window.TelePlayAdmin?.Log?.actions?.() || []), dateTime };
+  const events = () => backendMode() ? [...globalEvents] : (window.TelePlayAdmin?.Log?.events?.() || []);
+  const analytics = () => {
+    const rows = events(), metadata = item => item.metadata || item.params || {}, playerId = item => String(item.playerId || item.telegramId || 'local');
+    const unique = event => new Set(rows.filter(item => item.event === event).map(playerId)).size;
+    const count = event => rows.filter(item => item.event === event).length;
+    const opened = unique('app_opened'), selected = unique('game_selected'), started = unique('game_started'), finished = unique('game_finished');
+    const rate = (numerator, denominator) => denominator ? Math.round(numerator / denominator * 100) : 0;
+    const gameSessions = new Set(rows.filter(item => item.event === 'game_started').map(item => metadata(item).gameSessionId).filter(Boolean)).size;
+    return {
+      scope: backendMode() ? 'Последние 1 000 серверных событий' : 'Текущее устройство',
+      events: rows.length,
+      appOpened: opened,
+      gameSelected: selected,
+      gameStarted: started,
+      gameFinished: finished,
+      gameSessions,
+      paymentStarted: unique('payment_started'),
+      paymentCompleted: unique('payment_completed') || unique('first_payment_completed'),
+      selectionRate: rate(selected, opened),
+      firstGameRate: rate(started, opened),
+      completionRate: rate(finished, started),
+      paymentRate: rate(unique('payment_completed') || unique('first_payment_completed'), opened),
+      eventCounts: { app_opened: count('app_opened'), game_started: count('game_started'), game_finished: count('game_finished') }
+    };
+  };
+  const AdminData = { currentPlayer, dashboard, analytics, playerRows, loadPlayers, loadGlobal, loadPlayer, selectedPlayer, globalPlayers: () => [...globalPlayers], globalStatus: () => ({ ...globalLoad }), economy, games, shop, security, payments, events: () => events().reverse(), actions: () => backendMode() ? [...globalActions].reverse() : (window.TelePlayAdmin?.Log?.actions?.() || []), dateTime };
   window.TelePlayAdmin = window.TelePlayAdmin || {};
   window.TelePlayAdmin.Data = AdminData;
 })();

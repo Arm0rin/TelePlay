@@ -28,6 +28,18 @@
     const source = list.length ? list : available(games);
     return source[Math.floor(Math.random() * source.length)] || null;
   };
+  const starterRoute = (save, games, date) => {
+    const stats = save?.statistics || {}, started = Number(stats.totalGames || 0), finished = Number(stats.gamesPlayed || 0);
+    const hasRecord = Object.values(stats.bestResults || {}).some(score => Number(score || 0) > 0) || Object.values(save?.records || {}).some(record => Number(record?.bestScore || 0) > 0);
+    const steps = [
+      { id: 'first_launch', title: 'Запусти первую игру', done: started > 0 },
+      { id: 'first_finish', title: 'Доиграй до результата', done: finished > 0 },
+      { id: 'first_record', title: 'Поставь первый рекорд', done: hasRecord }
+    ];
+    const activeStep = steps.find(step => !step.done) || null;
+    const targetGame = continueGame(save, games)?.game || gameOfDay(games, date) || available(games)[0] || null;
+    return { steps, activeStep, complete: !activeStep, targetGame };
+  };
   window.TelePlayPlayer = window.TelePlayPlayer || {};
   window.TelePlayPlayer.Home = {
     available,
@@ -35,6 +47,7 @@
     continueGame,
     lastAchievement,
     randomGame,
+    starterRoute,
     futureSlots: ['dailyChallenge', 'events', 'friendsChallenges', 'leaderboard'],
   };
 })();

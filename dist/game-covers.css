@@ -1,0 +1,80 @@
+/* Only game artwork: preserve card geometry, text, navigation and game behavior. */
+.catalog-art.game-cover {
+  isolation: isolate;
+  perspective: 650px;
+  background: var(--bg);
+}
+.game-cover .game-cover-fallback {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: .25;
+}
+.game-cover-press {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  transform: scale(1);
+  transition: transform 160ms ease-out;
+}
+.game-cover-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+  transform: scale(1.06);
+  animation: game-cover-drift 9s ease-in-out infinite alternate;
+  animation-delay: var(--cover-delay, 0s);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.catalog-art.game-cover::after {
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 60%, #080b1740);
+}
+.catalog-art.game-cover::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: -35%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(110deg, transparent 35%, #d4f5ff30 50%, transparent 65%);
+  transform: translateX(-45%);
+  transition: transform 400ms ease-out, opacity 160ms ease-out;
+}
+button:active .game-cover-press {
+  transform: scale(1.1) rotate(-2deg) translateY(-2px);
+  transition-duration: 90ms;
+}
+button:active .game-cover::before,
+button:focus-visible .game-cover::before {
+  transform: translateX(25%);
+  opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+  button:hover .game-cover-press { transform: scale(1.065) rotate(-1deg); }
+  button:hover .game-cover::before { transform: translateX(25%); opacity: .7; }
+  button:active .game-cover-press { transform: scale(1.1) rotate(-2deg) translateY(-2px); }
+}
+.favorite-game-icon .game-cover,
+.profile-record-icon .game-cover {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.favorite-game-icon:has(.game-cover),
+.profile-record-icon:has(.game-cover) { overflow: hidden; padding: 0; }
+@keyframes game-cover-drift {
+  from { transform: scale(1.06) translate3d(-.8%, .6%, 0); }
+  to { transform: scale(1.12) translate3d(.8%, -.6%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-cover-image { animation: none; transform: none; }
+  .game-cover-press,
+  button:active .game-cover-press,
+  button:hover .game-cover-press { transform: none; transition: none; }
+  .catalog-art.game-cover::before { display: none; }
+}

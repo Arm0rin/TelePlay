@@ -1,134 +1,377 @@
-(() => {
-  const tg = window.Telegram?.WebApp;
-  const $ = id => document.getElementById(id);
-  const storeView = $('storeView');
-  tg?.ready(); tg?.expand();
-  try { tg?.setHeaderColor('#080b17'); tg?.setBackgroundColor('#080b17'); } catch (_) {}
-  const { games, categories, GameCard, GameArtwork } = window.TelePlayCatalog;
-  const home = () => window.TelePlayPlayer?.Home;
-  let catalogScroll = 0; let lastGame = null; let profileOpen = false; let challengesOpen = false; let shopOpen = false; let adminOpen = false; let shopCategory = 'all'; let activeGameShop = null; let gameShopCategory = 'all'; let challengeReturnProfile = false;
-  const adapters = { canvas: window.TelePlayAdapters?.CanvasGameAdapter, puzzle: window.TelePlayAdapters?.PuzzleGameAdapter, sports: window.TelePlayAdapters?.SportsGameAdapter };
-  games.forEach(game => { const component = window[game.component], Adapter = adapters[game.engineType]; if (component && Adapter && window.TelePlayCore?.GameSession) window.TelePlayCore.GameSession.register(game.id, new Adapter(game.id, component)); });
-  const player = () => window.TelePlayCore?.PlayerData;
-  const dataProvider = () => window.TelePlayCore?.DataProvider;
-  const renderDataStatus = status => {
-    const banner = $('dataStatus'), message = $('dataStatusMessage'), retry = $('dataStatusRetry'); if (!banner) return;
-    const visible = Boolean(status?.fallback); banner.hidden = !visible;
-    if (message) message.textContent = 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦';
-    if (retry) retry.hidden = !dataProvider()?.isBackendEnabled?.();
-  };
-  const availableGames = () => home()?.available?.(games) || games.filter(game => game.status === 'available');
-  const format = value => Number(value || 0).toLocaleString('ru-RU');
-  const priceInfo = item => { const raw = item?.price, currency = raw && typeof raw === 'object' ? raw.currency : item?.currencyType; if (raw && typeof raw === 'object') return { currency: String(currency || 'coins').toLowerCase() === 'gems' ? 'gems' : 'coins', amount: Number(raw.amount || 0) }; return { currency: String(currency || 'coins').toLowerCase() === 'gems' ? 'gems' : 'coins', amount: Number(raw || 0) }; };
-  const priceLabel = item => { const price = priceInfo(item); return price.amount ? `${format(price.amount)} ${price.currency === 'gems' ? 'ðŸ’Ž' : 'ðŸª™'}` : 'Ð‘ÐµÑÐ¿Ð»Ð°Ñ‚Ð½Ð¾'; };
-  const fallbackGame = () => availableGames().find(game => game.id === 'neon-hook') || availableGames()[0];
-  function applyAvatarFrame(element) { const frame = window.TelePlayShop?.equipped?.('avatarFrame'), badge = window.TelePlayShop?.equipped?.('badge') || window.TelePlayShop?.equipped?.('collectionBadge'); if (!element) return; element.style.borderColor = frame?.visual?.color || ''; element.style.boxShadow = frame ? `0 0 0 2px ${frame.visual.color}66, 0 0 22px ${frame.visual.accent || frame.visual.color}55` : ''; if (badge) element.dataset.badge = badge.icon || 'âœ¦'; else delete element.dataset.badge; }
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×Ž8é:-jZ.¶›­–)Þ³R‚‚’Óâ°¢6öç7BFrÒv–æF÷råFVÆVw&ÓòåvV$°¢6öç7BBÒ–BÓâFö7VÖVçBævWDVÆVÖVçD'”–B†–B“°¢6öç7B7F÷&Uf–WrÒB‚w7F÷&Uf–Wrr“°¢6öç7B7–æ5FVÆVw&Õf–Ww÷'BÒ‚’Óâ°¢6öç7B†V–v‡BÒçVÖ&W"‡Fsòçf–Ww÷'E7F&ÆT†V–v‡BÇÂFsòçf–Ww÷'D†V–v‡BÇÂv–æF÷ræ–ææW$†V–v‡BÇÂ’Â6fT&VÒFsòç6fT&V–ç6WC°¢–b††V–v‡Bâ’Fö7VÖVçBæFö7VÖVçDVÆVÖVçBç7G–ÆRç6WE&÷W'G’‚rÒ×FVÆWÆ’×f–Ww÷'BÖ†V–v‡BrÂG´ÖF‚æ6V–Â††V–v‡B—×†“°¢–b‡6fT&V’²Fö7VÖVçBæFö7VÖVçDVÆVÖVçBç7G–ÆRç6WE&÷W'G’‚rÒ×FVÆWÆ’×6fR×F÷rÂG´çVÖ&W"‡6fT&VçF÷ÇÂ—×†“²Fö7VÖVçBæFö7VÖVçDVÆVÖVçBç7G–ÆRç6WE&÷W'G’‚rÒ×FVÆWÆ’×6fRÖ&÷GFöÒrÂG´çVÖ&W"‡6fT&Væ&÷GFöÒÇÂ—×†“²Ð¢Ó°¢6öç7BW‡æEFVÆVw&Õf–Ww÷'BÒ‚’Óâ°¢G'’°¢Fsòç&VG’‚“²FsòæW‡æB‚“²Fsòç6WD†VFW$6öÆ÷"‚r3ƒ#rr“²Fsòç6WD&6¶w&÷VæD6öÆ÷"‚r3ƒ#rr“²Fsòç6WD&÷GFöÔ&$6öÆ÷#òâ‚r3ƒ#rr“°¢6öç7B¶Ö¦÷"ÒÂÖ–æ÷"ÒÒÒ7G&–ær‡FsòçfW'6–öâÇÂrr’ç7Æ—B‚râr’æÖ‡fÇVRÓâçVÖ&W"‡fÇVR’ÇÂ“°¢–b†Ö¦÷"ãÒ‚bb‡G—VöbFsòç&WVW7DgVÆÇ67&VVâÓÓÒvgVæ7F–öâr’bbFsòæ—4gVÆÇ67&VVâ’²6öç7B&WVW7BÒFrç&WVW7DgVÆÇ67&VVâ‚“²&WVW7Còæ6F6ƒòâ‚‚’Óâ·Ò“²Ð¢Ò6F6‚…ò’·Ð¢7–æ5FVÆVw&Õf–Ww÷'B‚“²&WVW7Dæ–ÖF–öäg&ÖR‡7–æ5FVÆVw&Õf–Ww÷'B“²6WEF–ÖV÷WB‡7–æ5FVÆVw&Õf–Ww÷'BÂ#S“°¢Ó°¢W‡æEFVÆVw&Õf–Ww÷'B‚“°¢FsòæöäWfVçCòâ‚wf–Ww÷'D6†ævVBrÂ7–æ5FVÆVw&Õf–Ww÷'B“°¢FsòæöäWfVçCòâ‚w6fT&V6†ævVBrÂ7–æ5FVÆVw&Õf–Ww÷'B“°¢FsòæöäWfVçCòâ‚v6öçFVçE6fT&V6†ævVBrÂ7–æ5FVÆVw&Õf–Ww÷'B“°¢v–æF÷ræFDWfVçDÆ—7FVæW"‚w&W6—¦RrÂ7–æ5FVÆVw&Õf–Ww÷'BÂ²76—fS¢G'VRÒ“°¢6öç7B²vÖW2Â6FVv÷&–W2ÂvÖT6&BÂvÖT'Gv÷&²ÒÒv–æF÷råFVÆUÆ”6FÆös°¢6öç7B†öÖRÒ‚’Óâv–æF÷råFVÆUÆ•Æ–W#òä†öÖS°¢ÆWB6FÆöu67&öÆÂÒ²ÆWBÆ7DvÖRÒçVÆÃ²ÆWB&öf–ÆT÷VâÒfÇ6S²ÆWB6†ÆÆVævW4÷VâÒfÇ6S²ÆWB6†÷÷VâÒfÇ6S²ÆWBFÖ–ä÷VâÒfÇ6S²ÆWBÆ–'&'”÷VâÒfÇ6S²ÆWB6†÷6FVv÷'’ÒvÆÂs²ÆWB7F—fTvÖU6†÷ÒçVÆÃ²ÆWBvÖU6†÷6FVv÷'’ÒvÆÂs²ÆWB6†ÆÆVævU&WGW&å&öf–ÆRÒfÇ6S²ÆWBöæ&ö&F–æu7FFRÒçVÆÃ°¢6öç7BFFW'2Ò²6çf3¢v–æF÷råFVÆUÆ”FFW'3òä6çf4vÖTFFW"ÂW§¦ÆS¢v–æF÷råFVÆUÆ”FFW'3òåW§¦ÆTvÖTFFW"Â7÷'G3¢v–æF÷råFVÆUÆ”FFW'3òå7÷'G4vÖTFFW"Ó°¢vÖW2æf÷$V6‚†vÖRÓâ²6öç7B6ö×öæVçBÒv–æF÷u¶vÖRæ6ö×öæVçEÒÂFFW"ÒFFW'5¶vÖRæVæv–æUG—UÓ²–b†6ö×öæVçBbbFFW"bbv–æF÷råFVÆUÆ”6÷&SòävÖU6W76–öâ’v–æF÷råFVÆUÆ”6÷&RävÖU6W76–öâç&Vv—7FW"†vÖRæ–BÂæWrFFW"†vÖRæ–BÂ6ö×öæVçB’“²Ò“°¢6öç7BÆ–W"Ò‚’Óâv–æF÷råFVÆUÆ”6÷&SòåÆ–W$FF°¢6öç7BFF&÷f–FW"Ò‚’Óâv–æF÷råFVÆUÆ”6÷&SòäFF&÷f–FW#°¢6öç7B&VæFW$FF7FGW2Ò7FGW2Óâ°¢6öç7B&ææW"ÒB‚vFF7FGW2r’ÂÖW76vRÒB‚vFF7FGW4ÖW76vRr’Â&WG'’ÒB‚vFF7FGW5&WG'’r“²–b‚&ææW"’&WGW&ã°¢6öç7Bf—6–&ÆRÒ&ööÆVâ‡7FGW3òæfÆÆ&6²“²&ææW"æ†–FFVâÒf—6–&ÆS°¢–b†ÖW76vR’ÖW76vRçFW‡D6öçFVçBÒ}	ÝR=M½íÂ}==}-ÂýíM½Ââ	ýí--íý]ÂýíM­½í}]Ý^(
+bs°¢–b‡&WG'’’&WG'’æ†–FFVâÒFF&÷f–FW"‚“òæ—4&6¶VæDVæ&ÆVCòâ‚“°¢Ó°¢6öç7B—4FVÖôFÖ–âÒ‚’Óâ&ööÆVâ‡v–æF÷råFVÆUÆ”FÖ–ãòäWFƒòæ—4FÖ–ãòâ‚’“°¢6öç7B—5f—6–&ÆTvÖRÒvÖRÓâvÖSòç7FGW2ÓÓÒvf–Æ&ÆRrÇÂ†vÖSòç7FGW2ÓÓÒvFVÖòrbb—4FVÖôFÖ–â‚’“°¢6öç7Bf—6–&ÆTvÖW2Ò‚’ÓâvÖW2æf–ÇFW"†—5f—6–&ÆTvÖR“°¢6öç7Bf–Æ&ÆTvÖW2Ò‚’Óâf—6–&ÆTvÖW2‚“°¢6öç7Bf÷&ÖBÒfÇVRÓâçVÖ&W"‡fÇVRÇÂ’çFôÆö6ÆU7G&–ær‚w'RÕ%Rr“°¢6öç7B&–6T–æfòÒ—FVÒÓâ²6öç7B&rÒ—FVÓòç&–6RÂ7W'&Væ7’Ò&rbbG—Vöb&rÓÓÒvö&¦V7Brò&ræ7W'&Væ7’¢—FVÓòæ7W'&Væ7•G—S²–b‡&rbbG—Vöb&rÓÓÒvö&¦V7Br’&WGW&â²7W'&Væ7“¢7G&–ær†7W'&Væ7’ÇÂv6ö–ç2r’çFôÆ÷vW$66R‚’ÓÓÒvvV×2ròvvV×2r¢v6ö–ç2rÂÖ÷VçC¢çVÖ&W"‡&ræÖ÷VçBÇÂ’Ó²&WGW&â²7W'&Væ7“¢7G&–ær†7W'&Væ7’ÇÂv6ö–ç2r’çFôÆ÷vW$66R‚’ÓÓÒvvV×2ròvvV×2r¢v6ö–ç2rÂÖ÷VçC¢çVÖ&W"‡&rÇÂ’Ó²Ó°¢6öç7B&–6TÆ&VÂÒ—FVÒÓâ²6öç7B&–6RÒ&–6T–æfò†—FVÒ“²&WGW&â&–6RæÖ÷VçBòG¶f÷&ÖB‡&–6RæÖ÷VçB—ÒG·&–6Ræ7W'&Væ7’ÓÓÒvvV×2rò	ù(âr¢	ú©’wÖ¢}	]ý½-Ýâs²Ó°¢6öç7BfÆÆ&6´vÖRÒ‚’Óâf–Æ&ÆTvÖW2‚’æf–æB†vÖRÓâvÖRæ–BÓÓÒvæVöâÖ†öö²r’ÇÂf–Æ&ÆTvÖW2‚•³Ó°¢gVæ7F–öâÇ”fF$g&ÖR†VÆVÖVçB’²6öç7Bg&ÖRÒv–æF÷råFVÆUÆ•6†÷òæWV—VCòâ‚vfF$g&ÖRr’Â&FvRÒv–æF÷råFVÆUÆ•6†÷òæWV—VCòâ‚v&FvRr’ÇÂv–æF÷råFVÆUÆ•6†÷òæWV—VCòâ‚v6öÆÆV7F–öä&FvRr“²–b‚VÆVÖVçB’&WGW&ã²VÆVÖVçBç7G–ÆRæ&÷&FW$6öÆ÷"Òg&ÖSòçf—7VÃòæ6öÆ÷"ÇÂrs²VÆVÖVçBç7G–ÆRæ&÷…6†F÷rÒg&ÖRò'‚G¶g&ÖRçf—7VÂæ6öÆ÷'ÓcbÂ#'‚G¶g&ÖRçf—7VÂæ66VçBÇÂg&ÖRçf—7VÂæ6öÆ÷'ÓSV¢rs²–b†&FvR’VÆVÖVçBæFF6WBæ&FvRÒ&FvRæ–6öâÇÂ~)Êbs²VÇ6RFVÆWFRVÆVÖVçBæFF6WBæ&FvS²Ð ¢gVæ7F–öâ&VæFW%&öf–ÆR†FF’°¢6öç7B&öf–ÆRÒFFòç&öf–ÆRÇÂ·ÒÂ&öw&W72ÒÆ–W"‚“òç&öw&W73òâ‚’ÇÂ²ÆWfVÃ¢Â7W'&VçE…¢ÂæW‡E…¢Â&öw&W73¢ÒÂ7FG2ÒFFòç7FF—7F–72ÇÂ·ÒÂ&V6÷&G4FFÒFFòç&V6÷&G2ÇÂ·ÒÂ&W7E&W7VÇG2Ò7FG2æ&W7E&W7VÇG2ÇÂ·ÒÂfF"ÒB‚w&öf–ÆTfF"r“°¢–b†fF"’²fF"çFW‡D6öçFVçBÒrs²–b‡&öf–ÆRæfF"’²6öç7B–ÖvRÒFö7VÖVçBæ7&VFTVÆVÖVçB‚v–Örr“²–ÖvRç7&2Ò&öf–ÆRæfF#²–ÖvRæÇBÒrs²fF"æVæD6†–ÆB†–ÖvR“²ÒVÇ6RfF"çFW‡D6öçFVçBÒ‡&öf–ÆRçW6W&æÖRÇÂuBr’ç6Æ–6RƒÂ’çFõWW$66R‚“²Ç”fF$g&ÖR†fF"“²6öç7B&öf–ÆT6&BÒFö7VÖVçBçVW'•6VÆV7F÷"‚rç&öf–ÆR×Æ–W"Ö6&Br’Â6÷6ÖWF–2Òv–æF÷råFVÆUÆ•6†÷òæWV—VCòâ‚v6öÆÆV7F–öä&FvRr“²–b‡&öf–ÆT6&B’²&öf–ÆT6&Bç7G–ÆRç6WE&÷W'G’‚rÒ×&öf–ÆRÖ66VçBrÂ6÷6ÖWF–3òçf—7VÃòæ6öÆ÷"ÇÂr3s†S–C2r“²&öf–ÆT6&Bæ6Æ74Æ—7BçFövvÆR‚v†2×&öf–ÆRÖ6÷6ÖWF–2rÂ&ööÆVâ†6÷6ÖWF–2’“²ÒÐ¢6öç7B&æ²ÒÆ–W"‚“òç&æ³òâ‚’ÇÂ&öw&W72ç&æ²ÇÂ²F—FÆS¢u&öö¶–RrÒÂ7F—fUF—FÆRÒÆ–W"‚“òæ7F—fUF—FÆSòâ‚’ÇÂ²F—FÆS¢}	Ýí-}í¢FVÆUÆ’rÒÂÖ7FW'’ÒÆ–W"‚“òæÖ7FW'“òâ‚’ÇÂ·ÒÂ6†–WfVÖVçE&öw&W72ÒÆ–W"‚“òæ6†–WfVÖVçE&öw&W73òâ‚’ÇÂ²6ö×ÆWFVC¢ÂF÷FÃ¢Ó°¢6öç7B‡W&6VçBÒÖF‚æÖ–âƒÂÖF‚æÖ‚ƒÂçVÖ&W"‡&öw&W72ç&öw&W72’ÇÂ’“²–b‚B‚w&öf–ÆTæ–6¶æÖRr’’B‚w&öf–ÆTæ–6¶æÖRr’çFW‡D6öçFVçBÒ&öf–ÆRçW6W&æÖRÇÂ}	=í¢s²–b‚B‚w&öf–ÆTÆWfVÂr’’B‚w&öf–ÆTÆWfVÂr’çFW‡D6öçFVçBÒ&öw&W72æÆWfVÃ²–b‚B‚w&öf–ÆU&æ²r’’B‚w&öf–ÆU&æ²r’çFW‡D6öçFVçBÒ&æ²çF—FÆS²–b‚B‚w&öf–ÆT7F—fUF—FÆRr’’B‚w&öf–ÆT7F—fUF—FÆRr’çFW‡D6öçFVçBÒ7F—fUF—FÆRçF—FÆS²–b‚B‚w&öf–ÆU‡r’’B‚w&öf–ÆU‡r’çFW‡D6öçFVçBÒ&öw&W72ææW‡E…òG·&öw&W72æ7W'&VçE…ÒòG·&öw&W72ææW‡E…Ò…¢tÔ‚ÄUdTÂs²–b‚B‚w&öf–ÆU‡&"r’’B‚w&öf–ÆU‡&"r’ç7G–ÆRçv–GF‚ÒG·‡W&6VçGÒV²–b‚B‚w&öf–ÆT6ö–ç2r’’B‚w&öf–ÆT6ö–ç2r’çFW‡D6öçFVçBÒf÷&ÖB†FFòæ6ö–ç2“²–b‚B‚w&öf–ÆTvV×2r’’B‚w&öf–ÆTvV×2r’çFW‡D6öçFVçBÒf÷&ÖB†FFòævV×2“²–b‚B‚w&öf–ÆT6†–WfVÖVçE&öw&W72r’’B‚w&öf–ÆT6†–WfVÖVçE&öw&W72r’çFW‡D6öçFVçBÒG¶6†–WfVÖVçE&öw&W72æ6ö×ÆWFVGÒòG¶6†–WfVÖVçE&öw&W72çF÷FÇÒMí-m]Ý–°¢6öç7BvVç&TæÖW2Òv–æF÷råFVÆUÆ•Æ–W#òå&öw&W76–öä6öæf–sòätTå$U2ÇÂ·Ó²B‚w&öf–ÆTÖ7FW'”Æ—7Br’æ–ææW$…DÔÂÒö&¦V7BæVçG&–W2†Ö7FW'’’æÖ‚…¶vVç&RÂfÇVUÒ’ÓâÆF—b6Æ73Ò'&öf–ÆRÖÖ7FW'’×&÷r#ãÇ7ããÆ#âG¶vVç&TæÖW5¶vVç&UÒÇÂvVç&WÓÂö#ãÇ6ÖÆÃí	Í	
+
+-	]
 
-  function renderProfile(data) {
-    const profile = data?.profile || {}, progress = player()?.progress?.() || { level: 1, currentXP: 0, nextXP: 100, progress: 0 }, stats = data?.statistics || {}, recordsData = data?.records || {}, bestResults = stats.bestResults || {}, avatar = $('profileAvatar');
-    if (avatar) { avatar.textContent = ''; if (profile.avatar) { const image = document.createElement('img'); image.src = profile.avatar; image.alt = ''; avatar.appendChild(image); } else avatar.textContent = (profile.username || 'T').slice(0, 1).toUpperCase(); applyAvatarFrame(avatar); const profileCard = document.querySelector('.profile-player-card'), cosmetic = window.TelePlayShop?.equipped?.('collectionBadge'); if (profileCard) { profileCard.style.setProperty('--profile-accent', cosmetic?.visual?.color || '#78e9d3'); profileCard.classList.toggle('has-profile-cosmetic', Boolean(cosmetic)); } }
-    const rank = player()?.rank?.() || progress.rank || { title: 'Rookie' }, activeTitle = player()?.activeTitle?.() || { title: 'ÐÐ¾Ð²Ð¸Ñ‡Ð¾Ðº TelePlay' }, mastery = player()?.mastery?.() || {}, achievementProgress = player()?.achievementProgress?.() || { completed: 0, total: 0 };
-    const xpPercent = Math.min(100, Math.max(0, Number(progress.progress) || 0)); if ($('profileNickname')) $('profileNickname').textContent = profile.username || 'Ð˜Ð³Ñ€Ð¾Ðº'; if ($('profileLevel')) $('profileLevel').textContent = progress.level; if ($('profileRank')) $('profileRank').textContent = rank.title; if ($('profileActiveTitle')) $('profileActiveTitle').textContent = activeTitle.title; if ($('profileXp')) $('profileXp').textContent = progress.nextXP ? `${progress.currentXP} / ${progress.nextXP} XP` : 'MAX LEVEL'; if ($('profileXpBar')) $('profileXpBar').style.width = `${xpPercent}%`; if ($('profileCoins')) $('profileCoins').textContent = format(data?.coins); if ($('profileGems')) $('profileGems').textContent = format(data?.gems); if ($('profileAchievementProgress')) $('profileAchievementProgress').textContent = `${achievementProgress.completed} / ${achievementProgress.total} Ð´Ð¾ÑÑ‚Ð¸Ð¶ÐµÐ½Ð¸Ð¹`;
-    const genreNames = window.TelePlayPlayer?.ProgressionConfig?.GENRES || {}; $('profileMasteryList').innerHTML = Object.entries(mastery).map(([genre, value]) => `<div class="profile-mastery-row"><span><b>${genreNames[genre] || genre}</b><small>ÐœÐÐ¡Ð¢Ð•Ð Ð¡Ð¢Ð’Ðž Â· LVL ${value.level}</small></span><i><em style="width:${value.progress}%"></em></i><strong>${format(value.currentXP)} / ${value.nextXP ? format(value.nextXP) : 'MAX'} XP</strong></div>`).join('');
-    const recordEntries = [...new Set([...Object.keys(recordsData), ...Object.keys(bestResults)])].map(id => { const game = games.find(item => item.id === id), record = recordsData[id] || {}, score = Math.max(Number(record.bestScore || 0), Number(bestResults[id] || 0)); return { id, game, record, score }; }).filter(item => item.game && item.score > 0).sort((a, b) => b.score - a.score);
-    const bestScore = recordEntries[0]?.score || 0;
-    if ($('profileGames')) $('profileGames').textContent = format(stats.gamesPlayed || stats.totalGames); if ($('profilePlayTime')) $('profilePlayTime').textContent = `${Math.round(Number(stats.totalPlayTime || 0) / 60)} Ð¼Ð¸Ð½`; if ($('profileBestScore')) $('profileBestScore').textContent = format(bestScore); if ($('profileRecords')) $('profileRecords').textContent = format(stats.recordsCount || recordEntries.length); if ($('profileCoinsEarned')) $('profileCoinsEarned').textContent = format(stats.totalCoinsEarned);
-    const launches = stats.launchesByGame || {}, favorites = Object.entries(launches).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 3).map(([id, count]) => ({ game: games.find(item => item.id === id), count })).filter(item => item.game);
-    $('favoriteGamesList').innerHTML = favorites.length ? favorites.map((item, index) => `<button class="favorite-game-row" type="button" data-profile-game="${item.game.id}" aria-label="ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¸Ð³Ñ€Ñƒ ${item.game.title}"><span class="favorite-game-rank">${index + 1}</span><span class="favorite-game-icon" style="--game-color:${item.game.color || '#70e8ff'}">${item.game.icon === 'car' ? 'â–¶' : 'âœ¦'}</span><span class="favorite-game-copy"><b>${item.game.title}</b><small>${item.count} Ð·Ð°Ð¿ÑƒÑÐº${item.count === 1 ? '' : item.count < 5 ? 'Ð°' : 'Ð¾Ð²'}</small></span><span class="profile-row-arrow" aria-hidden="true">â€º</span></button>`).join('') : '<span class="profile-empty">Ð¡Ñ‹Ð³Ñ€Ð°Ð¹ Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¸Ð³Ñ€ â€” Ð·Ð´ÐµÑÑŒ Ð¿Ð¾ÑÐ²ÑÑ‚ÑÑ Ñ„Ð°Ð²Ð¾Ñ€Ð¸Ñ‚Ñ‹.</span>';
-    $('profileRecordsList').innerHTML = recordEntries.length ? recordEntries.slice(0, 6).map(item => `<button class="profile-record-row" type="button" data-profile-game="${item.game.id}" aria-label="ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¸Ð³Ñ€Ñƒ ${item.game.title}"><span class="profile-record-icon" style="--game-color:${item.game.color || '#70e8ff'}">${item.game.icon === 'car' ? 'â–¶' : 'âœ¦'}</span><span><b>${item.game.title}</b><small>${item.id === 'penalty-duel' && Number(item.record.goals || 0) ? `${item.record.goals} Ð³Ð¾Ð»Ð¾Ð²` : 'Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚'}</small></span><strong>${format(item.score)}</strong><span class="profile-row-arrow" aria-hidden="true">â€º</span></button>`).join('') : '<span class="profile-empty">Ð¡Ñ‹Ð³Ñ€Ð°Ð¹ Ð¿ÐµÑ€Ð²ÑƒÑŽ Ð¸Ð³Ñ€Ñƒ â€” Ñ€ÐµÐºÐ¾Ñ€Ð´Ñ‹ Ð¿Ð¾ÑÐ²ÑÑ‚ÑÑ Ð·Ð´ÐµÑÑŒ.</span>';
-    const activity = data?.activity || {}, activityGame = games.find(item => item.id === activity.lastPlayedGameId), today = new Date().toISOString().slice(0, 10), yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10), activityDate = activity.lastPlayedDate === today ? 'Ð¡ÐµÐ³Ð¾Ð´Ð½Ñ' : activity.lastPlayedDate === yesterday ? 'Ð’Ñ‡ÐµÑ€Ð°' : activity.lastPlayedDate || 'ÐÐµÐ´Ð°Ð²Ð½Ð¾';
-    $('profileActivityList').innerHTML = activityGame ? `<div class="profile-activity-row"><span class="profile-activity-dot">â—</span><span><b>${activityDate} Â· Ð˜Ð³Ñ€Ð°Ð» ${activityGame.title}</b><small>${Number(activity.lastProgress || 0) > 0 ? `ÐŸÑ€Ð¾Ð³Ñ€ÐµÑÑ: ${Math.round(Number(activity.lastProgress))}%` : 'ÐŸÐ¾ÑÐ»ÐµÐ´Ð½ÑÑ Ð¸Ð³Ñ€Ð¾Ð²Ð°Ñ ÑÐµÑÑÐ¸Ñ'}</small></span></div>` : '<span class="profile-empty">Ð—Ð´ÐµÑÑŒ Ð¿Ð¾ÑÐ²Ð¸Ñ‚ÑÑ Ñ‚Ð²Ð¾Ñ Ð¿ÐµÑ€Ð²Ð°Ñ Ð¸Ð³Ñ€Ð¾Ð²Ð°Ñ ÑÐµÑÑÐ¸Ñ.</span>';
-    const challengeSnapshot = window.TelePlayChallenges?.snapshot?.();
-    if (challengeSnapshot) { if ($('profileStreak')) $('profileStreak').textContent = `${challengeSnapshot.streak.currentStreak} ${challengeSnapshot.streak.currentStreak === 1 ? 'Ð´ÐµÐ½ÑŒ' : 'Ð´Ð½.'}`; if ($('profileDailyCompleted')) $('profileDailyCompleted').textContent = `${challengeSnapshot.dailyCompleted} / ${challengeSnapshot.daily.items.length}`; if ($('profileActivityMeta')) $('profileActivityMeta').textContent = `${challengeSnapshot.streak.currentStreak} Ð´Ð½. ÑÐµÑ€Ð¸Ð¸ Â· Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÑÑ ÑÐµÑÑÐ¸Ñ ${activityDate.toLowerCase()}`; }
-  }
+
+-	-	â+rÅdÂG·fÇVRæÆWfVÇÓÂ÷6ÖÆÃãÂ÷7ããÆ“ãÆVÒ7G–ÆSÒ'v–GFƒ¢G·fÇVRç&öw&W77ÒR#ãÂöVÓãÂö“ãÇ7G&öæsâG¶f÷&ÖB‡fÇVRæ7W'&VçE…—ÒòG·fÇVRææW‡E…òf÷&ÖB‡fÇVRææW‡E…’¢tÔ‚wÒ…Â÷7G&öæsãÂöF—cæ’æ¦ö–â‚rr“°¢6öç7B&V6÷&DVçG&–W2Ò²ââææWr6WB…²ââäö&¦V7Bæ¶W—2‡&V6÷&G4FF’Âââäö&¦V7Bæ¶W—2†&W7E&W7VÇG2•Ò•ÒæÖ†–BÓâ²6öç7BvÖRÒvÖW2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ–B’Â&V6÷&BÒ&V6÷&G4FF¶–EÒÇÂ·ÒÂ66÷&RÒÖF‚æÖ‚„çVÖ&W"‡&V6÷&Bæ&W7E66÷&RÇÂ’ÂçVÖ&W"†&W7E&W7VÇG5¶–EÒÇÂ’“²&WGW&â²–BÂvÖRÂ&V6÷&BÂ66÷&RÓ²Ò’æf–ÇFW"†—FVÒÓâ—FVÒævÖRbb—FVÒç66÷&Râ’ç6÷'B‚†Â"’Óâ"ç66÷&RÒç66÷&R“°¢6öç7B&W7E66÷&RÒ&V6÷&DVçG&–W5³Óòç66÷&RÇÂ°¢–b‚B‚w&öf–ÆTvÖW2r’’B‚w&öf–ÆTvÖW2r’çFW‡D6öçFVçBÒf÷&ÖB‡7FG2ævÖW5Æ–VBÇÂ7FG2çF÷FÄvÖW2“²–b‚B‚w&öf–ÆUÆ•F–ÖRr’’B‚w&öf–ÆUÆ•F–ÖRr’çFW‡D6öçFVçBÒG´ÖF‚ç&÷VæB„çVÖ&W"‡7FG2çF÷FÅÆ•F–ÖRÇÂ’òc—ÒÍÖ²–b‚B‚w&öf–ÆT&W7E66÷&Rr’’B‚w&öf–ÆT&W7E66÷&Rr’çFW‡D6öçFVçBÒf÷&ÖB†&W7E66÷&R“²–b‚B‚w&öf–ÆU&V6÷&G2r’’B‚w&öf–ÆU&V6÷&G2r’çFW‡D6öçFVçBÒf÷&ÖB‡7FG2ç&V6÷&G46÷VçBÇÂ&V6÷&DVçG&–W2æÆVæwF‚“²–b‚B‚w&öf–ÆT6ö–ç4V&æVBr’’B‚w&öf–ÆT6ö–ç4V&æVBr’çFW‡D6öçFVçBÒf÷&ÖB‡7FG2çF÷FÄ6ö–ç4V&æVB“°¢6öç7BÆVæ6†W2Ò7FG2æÆVæ6†W4'”vÖRÇÂ·ÒÂff÷&—FW2Òö&¦V7BæVçG&–W2†ÆVæ6†W2’ç6÷'B‚†Â"’ÓâçVÖ&W"†%³Ò’ÒçVÖ&W"†³Ò’’ç6Æ–6RƒÂ2’æÖ‚…¶–BÂ6÷VçEÒ’Óâ‡²vÖS¢vÖW2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ–B’Â6÷VçBÒ’’æf–ÇFW"†—FVÒÓâ—FVÒævÖR“°¢B‚vff÷&—FTvÖW4Æ—7Br’æ–ææW$…DÔÂÒff÷&—FW2æÆVæwF‚òff÷&—FW2æÖ‚†—FVÒÂ–æFW‚’ÓâÆ'WGFöâ6Æ73Ò&ff÷&—FRÖvÖR×&÷r"G—SÒ&'WGFöâ"FF×&öf–ÆRÖvÖSÒ"G¶—FVÒævÖRæ–GÒ"&–ÖÆ&VÃÒ-	í-­½-Â=2G¶—FVÒævÖRçF—FÆWÒ#ãÇ7â6Æ73Ò&ff÷&—FRÖvÖR×&æ²#âG¶–æFW‚²ÓÂ÷7ããÇ7â6Æ73Ò&ff÷&—FRÖvÖRÖ–6öâ"7G–ÆSÒ"ÒÖvÖRÖ6öÆ÷#¢G¶—FVÒævÖRæ6öÆ÷"ÇÂr3sS†fbwÒ#âG´vÖT'Gv÷&²†—FVÒævÖR—ÓÂ÷7ããÇ7â6Æ73Ò&ff÷&—FRÖvÖRÖ6÷’#ãÆ#âG¶—FVÒævÖRçF—FÆWÓÂö#ãÇ6ÖÆÃâG¶—FVÒæ6÷VçGÒ}ý=¢G¶—FVÒæ6÷VçBÓÓÒòrr¢—FVÒæ6÷VçBÂRò}r¢}í"wÓÂ÷6ÖÆÃãÂ÷7ããÇ7â6Æ73Ò'&öf–ÆR×&÷rÖ'&÷r"&–Ö†–FFVãÒ'G'VR#î(£Â÷7ããÂö'WGFöãæ’æ¦ö–â‚rr’¢sÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í
+½=’Ý]­í½Í­â=(	B}M]Âýíý-ý-òM-í-²ãÂ÷7ãâs°¢B‚w&öf–ÆU&V6÷&G4Æ—7Br’æ–ææW$…DÔÂÒ&V6÷&DVçG&–W2æÆVæwF‚ò&V6÷&DVçG&–W2ç6Æ–6RƒÂb’æÖ†—FVÒÓâÆ'WGFöâ6Æ73Ò'&öf–ÆR×&V6÷&B×&÷r"G—SÒ&'WGFöâ"FF×&öf–ÆRÖvÖSÒ"G¶—FVÒævÖRæ–GÒ"&–ÖÆ&VÃÒ-	í-­½-Â=2G¶—FVÒævÖRçF—FÆWÒ#ãÇ7â6Æ73Ò'&öf–ÆR×&V6÷&BÖ–6öâ"7G–ÆSÒ"ÒÖvÖRÖ6öÆ÷#¢G¶—FVÒævÖRæ6öÆ÷"ÇÂr3sS†fbwÒ#âG´vÖT'Gv÷&²†—FVÒævÖR—ÓÂ÷7ããÇ7ããÆ#âG¶—FVÒævÖRçF—FÆWÓÂö#ãÇ6ÖÆÃâG¶—FVÒæ–BÓÓÒwVæÇG’ÖGVVÂrbbçVÖ&W"†—FVÒç&V6÷&BævöÇ2ÇÂ’òG¶—FVÒç&V6÷&BævöÇ7Ò=í½í&¢}	½=}’]}=½Í-"wÓÂ÷6ÖÆÃãÂ÷7ããÇ7G&öæsâG¶f÷&ÖB†—FVÒç66÷&R—ÓÂ÷7G&öæsãÇ7â6Æ73Ò'&öf–ÆR×&÷rÖ'&÷r"&–Ö†–FFVãÒ'G'VR#î(£Â÷7ããÂö'WGFöãæ’æ¦ö–â‚rr’¢sÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í
+½=’ý]-=â=2(	B]­íM²ýíý-ý-ò}M]ÂãÂ÷7ãâs°¢6öç7B7F—f—G’ÒFFòæ7F—f—G’ÇÂ·ÒÂ7F—f—G”vÖRÒvÖW2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ7F—f—G’æÆ7EÆ–VDvÖT–B’ÂFöF’ÒæWrFFR‚’çFô•4õ7G&–ær‚’ç6Æ–6RƒÂ’Â–W7FW&F’ÒæWrFFR„FFRææ÷r‚’ÒƒcC’çFô•4õ7G&–ær‚’ç6Æ–6RƒÂ’Â7F—f—G”FFRÒ7F—f—G’æÆ7EÆ–VDFFRÓÓÒFöF’ò}
+]=íMÝòr¢7F—f—G’æÆ7EÆ–VDFFRÓÓÒ–W7FW&F’ò}	-}]r¢7F—f—G’æÆ7EÆ–VDFFRÇÂ}	Ý]M-Ýâs°¢B‚w&öf–ÆT7F—f—G”Æ—7Br’æ–ææW$…DÔÂÒ7F—f—G”vÖRòÆF—b6Æ73Ò'&öf–ÆRÖ7F—f—G’×&÷r#ãÇ7â6Æ73Ò'&öf–ÆRÖ7F—f—G’ÖF÷B#î)xóÂ÷7ããÇ7ããÆ#âG¶7F—f—G”FFWÒ+r	=²G¶7F—f—G”vÖRçF—FÆWÓÂö#ãÇ6ÖÆÃâG´çVÖ&W"†7F—f—G’æÆ7E&öw&W72ÇÂ’âò	ýí=]¢G´ÖF‚ç&÷VæB„çVÖ&W"†7F—f—G’æÆ7E&öw&W72’—ÒV¢}	ýí½]MÝýò=í-ò]òwÓÂ÷6ÖÆÃãÂ÷7ããÂöF—cæ¢sÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í	}M]Âýíý--ò--íòý]-ò=í-ò]òãÂ÷7ãâs°¢6öç7B6†ÆÆVævU6æ6†÷BÒv–æF÷råFVÆUÆ”6†ÆÆVævW3òç6æ6†÷Còâ‚“°¢–b†6†ÆÆVævU6æ6†÷B’²–b‚B‚w&öf–ÆU7G&V²r’’B‚w&öf–ÆU7G&V²r’çFW‡D6öçFVçBÒG¶6†ÆÆVævU6æ6†÷Bç7G&V²æ7W'&VçE7G&V·ÒG¶6†ÆÆVævU6æ6†÷Bç7G&V²æ7W'&VçE7G&V²ÓÓÒò}M]ÝÂr¢}MÒâwÖ²–b‚B‚w&öf–ÆTF–Ç”6ö×ÆWFVBr’’B‚w&öf–ÆTF–Ç”6ö×ÆWFVBr’çFW‡D6öçFVçBÒG¶6†ÆÆVævU6æ6†÷BæF–Ç”6ö×ÆWFVGÒòG¶6†ÆÆVævU6æ6†÷BæF–Ç’æ—FV×2æÆVæwF‡Ö²–b‚B‚w&öf–ÆT7F—f—G”ÖWFr’’B‚w&öf–ÆT7F—f—G”ÖWFr’çFW‡D6öçFVçBÒG¶6†ÆÆVævU6æ6†÷Bç7G&V²æ7W'&VçE7G&V·ÒMÒâ]‚+rýí½]MÝýò]òG¶7F—f—G”FFRçFôÆ÷vW$66R‚—Ö²Ð¢Ð ¢gVæ7F–öâ6†ÆÆVævT6&B†—FVÒ’²6öç7BW&6VçBÒÖF‚æÖ–âƒÂÖF‚ç&÷VæB„çVÖ&W"†—FVÒç&öw&W72ÇÂ’òÖF‚æÖ‚ƒÂçVÖ&W"†—FVÒçF&vWBÇÂ’’¢’“²&WGW&âÆ'F–6ÆR6Æ73Ò&6†ÆÆVævRÖ6&BG¶—FVÒç7FGW2ÓÓÒv6ö×ÆWFVBròv—2Ö6ö×ÆWFRr¢rwÒ#ãÆF—b6Æ73Ò&6†ÆÆVævRÖ6&B×F÷#ãÇ7â6Æ73Ò&6†ÆÆVævRÖ6†V6²#âG¶—FVÒç7FGW2ÓÓÒv6ö×ÆWFVBrò~)É2r¢~)ÊbwÓÂ÷7ããÆF—cãÆ#âG¶—FVÒçF—FÆWÓÂö#ãÇ6ÖÆÃâG¶—FVÒæFW67&—F–öçÓÂ÷6ÖÆÃãÂöF—cãÇ7G&öæsâG·v–æF÷råFVÆUÆ”6†ÆÆVævW2ç&Wv&EFW‡B†—FVÒ—ÓÂ÷7G&öæsãÂöF—cãÆF—b6Æ73Ò&6†ÆÆVævR×&öw&W72×&÷r#ãÆ“ãÆVÒ7G–ÆSÒ'v–GFƒ¢G·W&6VçGÒR#ãÂöVÓãÂö“ãÇ7ãâG´ÖF‚æÖ–â„çVÖ&W"†—FVÒç&öw&W72ÇÂ’ÂçVÖ&W"†—FVÒçF&vWBÇÂ’—ÒòG¶—FVÒçF&vWGÓÂ÷7ããÂöF—cãÂö'F–6ÆSæ²Ð¢gVæ7F–öâ&VæFW$6†ÆÆVævW2‚’²6öç7B6æ6†÷BÒv–æF÷råFVÆUÆ”6†ÆÆVævW3òç6æ6†÷Còâ‚’ÂW‡—'’Ò¶W’ÓâæWrFFR†G¶¶W—ÕC££ã¦’çFôÆö6ÆTFFU7G&–ær‚w'RÕ%RrÂ²F“¢vçVÖW&–2rÂÖöçFƒ¢w6†÷'BrÒ“²–b‚6æ6†÷B’&WGW&ã²–b‚B‚v6†ÆÆVævU7G&V²r’’B‚v6†ÆÆVævU7G&V²r’çFW‡D6öçFVçBÒ6æ6†÷Bç7G&V²æ7W'&VçE7G&V³²–b‚B‚vF–Ç”6†ÆÆVævU&W6WBr’’B‚vF–Ç”6†ÆÆVævU&W6WBr’çFW‡D6öçFVçBÒMâG¶W‡—'’‡6æ6†÷BæF–Ç’æW‡—&W4B—Ö²–b‚B‚wvVV¶Ç”6†ÆÆVævU&W6WBr’’B‚wvVV¶Ç”6†ÆÆVævU&W6WBr’çFW‡D6öçFVçBÒMâG¶W‡—'’‡6æ6†÷BçvVV¶Ç’æW‡—&W4B—Ö²–b‚B‚vF–Ç”6†ÆÆVævW4Æ—7Br’’B‚vF–Ç”6†ÆÆVævW4Æ—7Br’æ–ææW$…DÔÂÒ6æ6†÷BæF–Ç’æ—FV×2æÖ†6†ÆÆVævT6&B’æ¦ö–â‚rr“²–b‚B‚wvVV¶Ç”6†ÆÆVævW4Æ—7Br’’B‚wvVV¶Ç”6†ÆÆVævW4Æ—7Br’æ–ææW$…DÔÂÒ6æ6†÷BçvVV¶Ç’æ—FV×2æÖ†6†ÆÆVævT6&B’æ¦ö–â‚rr“²Ð ¢6öç7B6†÷W6vRÒ—FVÒÓâ°¢6öç7BW6W2Ò°¢vfF"Ög&ÖW2s¢}
+Í­ýíM½òFVÆUÆ’rÂF—FÆW3¢}
+--=²ýíBÝ­íÂ=í­rÂ&öf–ÆS¢}	­í½½]­míÝÝ½’]MbýíM½òrÂ7V6–Ã¢}	íí½’}Ý¢­í½½]­m‚rÀ¢&VÖ—VÓ¢}	ý]Í½ÍÝò­íÍ]-­}FVÆTvV×2rÀ¢6'3¢}	Í]Ýý]"-Ý]Ý’-BÍÝ²"æVöâ&6RrÂG&–Ç3¢}	Í]Ýý]"½]BM-m]Ýò"=RrÂVffV7G3¢}	Mí-½ý]"-}=½ÍÝ½’ÝMM]­""=RrÂ&6¶w&÷VæG3¢}	Í]Ýý]"MíÒ=í-í=âÝ­ÝrÀ¢†öö·3¢}	Í]Ýý]"­í¢‚½Ýâ}m]ý"æVöâ†öö²rÂ'F–6ÆW3¢}	Í]Ýý]"}-m²‚ÝÝ]=]-}]­’½]BrÂw'VææW"×7G–ÆRs¢}	Í]Ýý]"-½ÂæVöâ6÷&R"&VBF6‚rÂwv÷&ÆB×F†VÖW2s¢}	Í]Ýý]"Í‚MíÒ=í-ÝòrÀ¢&ÆÇ3¢}	Í]Ýý]"-Ý]Ý’-BÍý}"VæÇG’GVVÂrÂvvöÂÖVffV7G2s¢}	Í]Ýý]"ÝMM]­"ýí½R=í½rÂ7FF—V×3¢}	Í]Ýý]"MíÒ-MíÝrÂv&Æö6²×F†VÖW2s¢}	Í]Ýý]"-½Â½í­í""&Æö6²w&–Bp¢Ó°¢&WGW&âW6W5¶—FVÒæ6FVv÷'•ÒÇÂ}	­íÍ]-­FVÆUÆ’s°¢Ó°¢gVæ7F–öâ6†÷6&B†—FVÒ’°¢6öç7B&&—G’Òv–æF÷råFVÆUÆ•6†÷6öæf–sòå$$•D”U3òå¶—FVÒç&&—G•ÒÇÂ²Æ&VÃ¢—FVÒç&&—G’Â6öÆ÷#¢r3––6rÂvÆ÷s¢r3v#†#"rÓ°¢6öç7Bf—7VÂÒ—FVÒçf—7VÂÇÂ—FVÒçf—7VÄFFÇÂ·Ó°¢6öç7B&–6RÒ&–6T–æfò†—FVÒ’Â7F–öâÒ—FVÒæ÷væVBò†—FVÒæWV—VBò}
+Ý­ýí-Ýâr¢}	ÝM]-Âr’¢‡&–6RæÖ÷VçBò	­=ý-Â+rG·&–6TÆ&VÂ†—FVÒ—Ö¢}	}-Âr“°¢6öç7B7FFRÒ—FVÒæWV—VBòtUT•TBr¢—FVÒæ÷væVBòtõtäTBr¢rs°¢6öç7BvÖRÒ—FVÒævÖT–BòvÖW2æf–æB‡fÇVRÓâfÇVRæ–BÓÓÒ—FVÒævÖT–B’¢çVÆÃ°¢&WGW&âÆ'F–6ÆR6Æ73Ò'6†÷Ö—FVÒÖ6&B&&—G’ÒG¶—FVÒç&&—G—ÒG¶—FVÒæ÷væVBòv—2Ö÷væVBr¢rwÒG¶—FVÒæWV—VBòv—2ÖWV—VBr¢rwÒG·&–6Ræ7W'&Væ7’ÓÓÒvvV×2ròv—2×&VÖ—VÒr¢rwÒ"FF×6†÷Ö—FVÓÒ"G¶—FVÒæ–GÒ"FF×&&—G“Ò"G¶—FVÒç&&—G—Ò"7G–ÆSÒ"ÒÖ—FVÒÖ6öÆ÷#¢G·f—7VÂæ6öÆ÷"ÇÂ&&—G’æ6öÆ÷'Ó²ÒÖ—FVÒÖvÆ÷s¢G·f—7VÂæ66VçBÇÂ&&—G’ævÆ÷wÒ#ãÆF—b6Æ73Ò'6†÷Ö—FVÒÖ'B#ãÇ7â6Æ73Ò'6†÷Ö'BÖ÷&&—B#ãÂ÷7ããÇ7â6Æ73Ò'6†÷Ö'BÖvÇ—‚#âG¶—FVÒæ–6öçÓÂ÷7ãâG¶—FVÒæWV—VBòsÆ“î)É3Âö“âr¢rwÒG·7FFRòÆ"6Æ73Ò'6†÷Ö—FVÒ×7FFR#âG·7FFWÓÂö#æ¢rwÓÂöF—cãÆF—b6Æ73Ò'6†÷Ö—FVÒÖ6÷’#ãÆF—b6Æ73Ò'6†÷Ö—FVÒÖÖWF#ãÇ7â7G–ÆSÒ&6öÆ÷#¢G·&&—G’æ6öÆ÷'Ò#âG·&&—G’æÆ&VÇÓÂ÷7ããÇ6ÖÆÃâG¶vÖSòçF—FÆRÇÂ‡&–6Ræ7W'&Væ7’ÓÓÒvvV×2ròuDTÄTtTÕ2r¢uDTÄUÄ’r—ÓÂ÷6ÖÆÃãÂöF—cãÆƒ3âG¶—FVÒææÖWÓÂöƒ3ãÇâG¶—FVÒæFW67&—F–öçÓÂ÷ãÇ6ÖÆÂ6Æ73Ò'6†÷Ö—FVÒ×W6R#âG·6†÷W6vR†—FVÒ—ÓÂ÷6ÖÆÃãÂöF—cãÆ'WGFöâ6Æ73Ò'6†÷Ö—FVÒÖ7F–öâG¶—FVÒæ÷væVBòw6V6öæF'’r¢rwÒ"G—SÒ&'WGFöâ"FF×6†÷Ö7F–öãÒ"G¶—FVÒæ÷væVBò†—FVÒæWV—VBòwVæWV—r¢vWV—r’¢v'W’wÒ#âG¶7F–öçÓÂö'WGFöããÂö'F–6ÆSæ°¢Ð¢gVæ7F–öâfÆ6…6†÷6&B†–BÂ¶–æBÒw7V66W72r’²&WVW7Dæ–ÖF–öäg&ÖR‚‚’Óâ²6öç7B6&BÒFö7VÖVçBçVW'•6VÆV7F÷"†¶FF×6†÷Ö—FVÓÒ"G¶–GÒ%Ö“²–b‚6&B’&WGW&ã²6&Bæ6Æ74Æ—7BæFB†6†÷ÒG¶¶–æGÖ“²6WEF–ÖV÷WB‚‚’Óâ6&Bæ6Æ74Æ—7Bç&VÖ÷fR†6†÷ÒG¶¶–æGÖ’ÂS#“²Ò“²Ð¢7–æ2gVæ7F–öâ&VæFW%&VÖ—VÕ6¶vW2‚’²6öç7BæVÂÒB‚w&VÖ—VÕ6¶vW2r’ÂÆ—7BÒB‚w&VÖ—VÕ6¶vW4Æ—7Br’Â7FGW2ÒB‚w&VÖ—VÕ6¶vW57FGW2r“²–b‚æVÂÇÂÆ—7B’&WGW&ã²–b†7F—fTvÖU6†÷’²æVÂæ†–FFVâÒG'VS²&WGW&ã²ÒæVÂæ†–FFVâÒfÇ6S²–b‡7FGW2’7FGW2çFW‡D6öçFVçBÒ}	}==}­vV×2Ýý­]-í.(
+bs²G'’²6öç7B6¶vW2Òv—Bv–æF÷råFVÆUÆ”6÷&Sòå–ÖVçDÖævW#òç6¶vW3òâ‚’ÇÂµÓ²–b‚6¶vW2æÆVæwF‚’²–b‡7FGW2’7FGW2çFW‡D6öçFVçBÒ}	ý­]-²7F'2ýí­Ý]Mí-=ýÝ²âs²Æ—7Bæ–ææW$…DÔÂÒsÆF—b6Æ73Ò'6†÷ÖV×G’&VÖ—VÒ×6¶vW2ÖV×G’#í	ÝR=M½íÂýí½=}-ÂvV×2Ýý­]-²]-]ãÆ'#ãÆ'WGFöâG—SÒ&'WGFöâ"6Æ73Ò'&VÖ—VÒ×&WG'’"FF×&VÖ—VÒ×&WG'“í	ýí--í-Â}==}­3Âö'WGFöããÂöF—câs²&WGW&ã²Ò–b‡7FGW2’7FGW2çFW‡D6öçFVçBÒ}	-½]‚ý­]"(	Bíý½-í-­í]-ò-Ý=-‚FVÆVw&Òâs²Æ—7Bæ–ææW$…DÔÂÒ6¶vW2æÖ†—FVÒÓâ²6öç7BF÷FÄvV×2ÒçVÖ&W"†—FVÒçF÷FÄvV×2óòçVÖ&W"†—FVÒævV×4Ö÷VçBÇÂ’²çVÖ&W"†—FVÒæ&öçW2ÇÂ’“²6öç7B&öçW2ÒçVÖ&W"†—FVÒæ&öçW2ÇÂ“²&WGW&âÆ'WGFöâG—SÒ&'WGFöâ"6Æ73Ò'6V6öæF'’Ö'WGFöâ&VÖ—VÒ×6¶vR"FF×&VÖ—VÒ×6¶vSÒ"G¶—FVÒæ–GÒ#ãÆ#âG¶f÷&ÖB‡F÷FÄvV×2—Ò	ù(ãÂö#ãÇ7ãâG¶f÷&ÖB†—FVÒæÖ÷VçB—ÒG¶—FVÒæ7W'&Væ7—ÒG¶&öçW2ò+r²G¶f÷&ÖB†&öçW2—ÒíÝ=¢rwÓÂ÷7ããÂö'WGFöãæ²Ò’æ¦ö–â‚rr“²Ò6F6‚…ò’²–b‡7FGW2’7FGW2çFW‡D6öçFVçBÒ}	ÝR=M½íÂ}==}-ÂvV×2Ýý­]-²âs²Æ—7Bæ–ææW$…DÔÂÒsÆF—b6Æ73Ò'6†÷ÖV×G’&VÖ—VÒ×6¶vW2ÖV×G’#í	ýí-]ÂýíM­½í}]ÝR‚ýí--í‚}==}­2ãÆ'#ãÆ'WGFöâG—SÒ&'WGFöâ"6Æ73Ò'&VÖ—VÒ×&WG'’"FF×&VÖ—VÒ×&WG'“í	ýí--í-Â}==}­3Âö'WGFöããÂöF—câs²ÒÐ¢gVæ7F–öâ&VæFW%6†÷‚’°¢6öç7BÖævW"Òv–æF÷råFVÆUÆ•6†÷Â6öæf–rÒv–æF÷råFVÆUÆ•6†÷6öæf–s°¢–b‚ÖævW"ÇÂ6öæf–r’&WGW&ã°¢6öç7BvÖU6†÷Ò7F—fTvÖU6†÷òv–æM¸ã«h‘éì¶»§q«^t[˜[YIÊJH	
+	ÝÙYZÛQÛØ[˜[YIÊK^ÛÛ[H	Ù›Ü›X]
+›ÙÜ™\ÜÕ˜[YJ_HÈ	Ù›Ü›X]
+\™Ù]
+_XÈYˆ
+	
+	ÝÙYZÛQÛØ[˜\‰ÊJH	
+	ÝÙYZÛQÛØ[˜\‰ÊKœÝ[KÚYH	Ü\˜Ù[IXÈYˆ
+	
+	ÝÙYZÛQÛØ[™]Ø\™	ÊJH	
+	ÝÙYZÛQÛØ[™]Ø\™	ÊK^ÛÛ[H4't,4,ô`4,4-4,ˆ	ÝÚ[™ÝË•[T^PÚ[[™Ù\ÏËœ™]Ø\™^ËŠZ\ÜÚ[ÛŠH	ø %	ßXÈBˆÛÛœÝ™XÔÛÝ\˜ÙHH]˜Z[X›QØ[Y\Ê
+K™š[\ŠØ[YHOˆØ[YKšYOOH™X]\™YËšY
+K™XÙ[YH]K˜XÝ]š]OË›\Ý^YYØ[YRY™XÛÛ[Y[™][ÛœÈHË‹‹œ™XÔÛÝ\˜ÙWKœÛÜ
 
-  function challengeCard(item) { const percent = Math.min(100, Math.round(Number(item.progress || 0) / Math.max(1, Number(item.target || 1)) * 100)); return `<article class="challenge-card ${item.status === 'completed' ? 'is-complete' : ''}"><div class="challenge-card-top"><span class="challenge-check">${item.status === 'completed' ? 'âœ“' : 'âœ¦'}</span><div><b>${item.title}</b><small>${item.description}</small></div><strong>${window.TelePlayChallenges.rewardText(item)}</strong></div><div class="challenge-progress-row"><i><em style="width:${percent}%"></em></i><span>${Math.min(Number(item.progress || 0), Number(item.target || 0))} / ${item.target}</span></div></article>`; }
-  function renderChallenges() { const snapshot = window.TelePlayChallenges?.snapshot?.(), expiry = key => new Date(`${key}T00:00:00.000Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }); if (!snapshot) return; if ($('challengeStreak')) $('challengeStreak').textContent = snapshot.streak.currentStreak; if ($('dailyChallengeReset')) $('dailyChallengeReset').textContent = `Ð´Ð¾ ${expiry(snapshot.daily.expiresAt)}`; if ($('weeklyChallengeReset')) $('weeklyChallengeReset').textContent = `Ð´Ð¾ ${expiry(snapshot.weekly.expiresAt)}`; if ($('dailyChallengesList')) $('dailyChallengesList').innerHTML = snapshot.daily.items.map(challengeCard).join(''); if ($('weeklyChallengesList')) $('weeklyChallengesList').innerHTML = snapshot.weekly.items.map(challengeCard).join(''); }
+KŠHOˆ[X™\Š‹šYOOH	Ý›ÚY	ÊHH[X™\ŠKšYOOH	Ý›ÚY	ÊH[X™\Š‹šYOOH™XÙ[Y
+HH[X™\ŠKšYOOH™XÙ[Y
+JKœÛXÙJÊNÂˆYˆ
+	
+	Ü™XÛÛ[Y[™][ÛœÓ\Ý	ÊJH	
+	Ü™XÛÛ[Y[™][ÛœÓ\Ý	ÊKš[›™\’SH™XÛÛ[Y[™][ÛœË›X\
+Ø[YHOˆ]ÛˆÛ\ÜÏHœ™XÛÛ[Y[™][Û‹XØ\™ˆ\OH˜]Ûˆˆ]K\™XÛÛ[Y[™][Û‹YØ[YOH‰ÙØ[YKšYHˆ\šXK[X™[H´'´`´.´`4bô`´c4.4,ô`4`È	ÙØ[YK]_H‰ÑØ[YP\ÛÜšÊØ[YJ_OÜ[ˆÛ\ÜÏHœ™XÛÛ[Y[™][Û‹XÛÜH‰ÙØ[YK]_OØÛX[‰ØØ]YÛÜšY\ÖÙØ[YK˜Ø]YÛÜžW_OÜÛX[ÜÜ[Ø]Û˜
+Kš›Ú[Š	ÉÊNÂˆYˆ
+›Ùš[SÜ[ŠH™[™\”›Ùš[J]JNÈYˆ
+Ú[[™Ù\ÓÜ[ŠH™[™\Ú[[™Ù\Ê
+NÈYˆ
+ÚÜÜ[ŠH™[™\”ÚÜ
 
-  const shopUsage = item => {
-    const uses = {
-      'avatar-frames': 'Ð Ð°Ð¼ÐºÐ° Ð¿Ñ€Ð¾Ñ„Ð¸Ð»Ñ TelePlay', titles: 'Ð¢Ð¸Ñ‚ÑƒÐ» Ð¿Ð¾Ð´ Ð½Ð¸ÐºÐ¾Ð¼ Ð¸Ð³Ñ€Ð¾ÐºÐ°', profile: 'ÐšÐ¾Ð»Ð»ÐµÐºÑ†Ð¸Ð¾Ð½Ð½Ñ‹Ð¹ Ð±ÐµÐ¹Ð´Ð¶ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»Ñ', special: 'ÐžÑÐ¾Ð±Ñ‹Ð¹ Ð·Ð½Ð°Ðº ÐºÐ¾Ð»Ð»ÐµÐºÑ†Ð¸Ð¸',
-      premium: 'ÐŸÑ€ÐµÐ¼Ð¸Ð°Ð»ÑŒÐ½Ð°Ñ ÐºÐ¾ÑÐ¼ÐµÑ‚Ð¸ÐºÐ° Ð·Ð° TeleGems',
-      cars: 'ÐœÐµÐ½ÑÐµÑ‚ Ð²Ð½ÐµÑˆÐ½Ð¸Ð¹ Ð²Ð¸Ð´ Ð¼Ð°ÑˆÐ¸Ð½Ñ‹ Ð² Neon Race', trails: 'ÐœÐµÐ½ÑÐµÑ‚ ÑÐ»ÐµÐ´ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ñ Ð² Ð¸Ð³Ñ€Ðµ', effects: 'Ð”Ð¾Ð±Ð°Ð²Ð»ÑÐµÑ‚ Ð²Ð¸Ð·ÑƒÐ°Ð»ÑŒÐ½Ñ‹Ð¹ ÑÑ„Ñ„ÐµÐºÑ‚ Ð² Ð¸Ð³Ñ€Ðµ', backgrounds: 'ÐœÐµÐ½ÑÐµÑ‚ Ñ„Ð¾Ð½ Ð¸Ð³Ñ€Ð¾Ð²Ð¾Ð³Ð¾ ÑÐºÑ€Ð°Ð½Ð°',
-      hooks: 'ÐœÐµÐ½ÑÐµÑ‚ ÐºÑ€ÑŽÐº Ð¸ Ð»Ð¸Ð½Ð¸ÑŽ Ð·Ð°Ñ†ÐµÐ¿Ð° Ð² Neon Hook', particles: 'ÐœÐµÐ½ÑÐµÑ‚ Ñ‡Ð°ÑÑ‚Ð¸Ñ†Ñ‹ Ð¸ ÑÐ½ÐµÑ€Ð³ÐµÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ ÑÐ»ÐµÐ´', 'runner-style': 'ÐœÐµÐ½ÑÐµÑ‚ ÑÑ‚Ð¸Ð»ÑŒ Neon Core Ð² Beat Dash', 'world-themes': 'ÐœÐµÐ½ÑÐµÑ‚ Ð¼Ð¸Ñ€ Ð¸ Ñ„Ð¾Ð½ ÑƒÑ€Ð¾Ð²Ð½Ñ',
-      balls: 'ÐœÐµÐ½ÑÐµÑ‚ Ð²Ð½ÐµÑˆÐ½Ð¸Ð¹ Ð²Ð¸Ð´ Ð¼ÑÑ‡Ð° Ð² Penalty Duel', 'goal-effects': 'ÐœÐµÐ½ÑÐµÑ‚ ÑÑ„Ñ„ÐµÐºÑ‚ Ð¿Ð¾ÑÐ»Ðµ Ð³Ð¾Ð»Ð°', stadiums: 'ÐœÐµÐ½ÑÐµÑ‚ Ñ„Ð¾Ð½ ÑÑ‚Ð°Ð´Ð¸Ð¾Ð½Ð°', 'block-themes': 'ÐœÐµÐ½ÑÐµÑ‚ ÑÑ‚Ð¸Ð»ÑŒ Ð±Ð»Ð¾ÐºÐ¾Ð² Ð² Block Grid'
-    };
-    return uses[item.category] || 'ÐšÐ¾ÑÐ¼ÐµÑ‚Ð¸ÐºÐ° TelePlay';
-  };
-  function shopCard(item) {
-    const rarity = window.TelePlayShopConfig?.RARITIES?.[item.rarity] || { label: item.rarity, color: '#9aa9ca', glow: '#7b8ab2' };
-    const visual = item.visual || item.visualData || {};
-    const price = priceInfo(item), action = item.owned ? (item.equipped ? 'Ð­ÐºÐ¸Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾' : 'ÐÐ°Ð´ÐµÑ‚ÑŒ') : (price.amount ? `ÐšÑƒÐ¿Ð¸Ñ‚ÑŒ Â· ${priceLabel(item)}` : 'Ð—Ð°Ð±Ñ€Ð°Ñ‚ÑŒ');
-    const state = item.equipped ? 'EQUIPPED' : item.owned ? 'OWNED' : '';
-    const game = item.gameId ? games.find(value => value.id === item.gameId) : null;
-    return `<article class="shop-item-card rarity-${item.rarity} ${item.owned ? 'is-owned' : ''} ${item.equipped ? 'is-equipped' : ''} ${price.currency === 'gems' ? 'is-premium' : ''}" data-shop-item="${item.id}" data-rarity="${item.rarity}" style="--item-color:${visual.color || rarity.color};--item-glow:${visual.accent || rarity.glow}"><div class="shop-item-art"><span class="shop-art-orbit"></span><span class="shop-art-glyph">${item.icon}</span>${item.equipped ? '<i>âœ“</i>' : ''}${state ? `<b class="shop-item-state">${state}</b>` : ''}</div><div class="shop-item-copy"><div class="shop-item-meta"><span style="color:${rarity.color}">${rarity.label}</span><small>${game?.title || (price.currency === 'gems' ? 'TELEGEMS' : 'TELEPLAY')}</small></div><h3>${item.name}</h3><p>${item.description}</p><small class="shop-item-use">${shopUsage(item)}</small></div><button class="shop-item-action ${item.owned ? 'secondary' : ''}" type="button" data-shop-action="${item.owned ? (item.equipped ? 'unequip' : 'equip') : 'buy'}">${action}</button></article>`;
-  }
-  function flashShopCard(id, kind = 'success') { requestAnimationFrame(() => { const card = document.querySelector(`[data-shop-item="${id}"]`); if (!card) return; card.classList.add(`shop-${kind}`); setTimeout(() => card.classList.remove(`shop-${kind}`), 520); }); }
-  async function renderPremiumPackages() { const panel = $('premiumPackages'), list = $('premiumPackagesList'), status = $('premiumPackagesStatus'); if (!panel || !list) return; if (activeGameShop) { panel.hidden = true; return; } panel.hidden = false; if (status) status.textContent = 'Ð—Ð°Ð³Ñ€ÑƒÐ·ÐºÐ° Gems-Ð¿Ð°ÐºÐµÑ‚Ð¾Ð²â€¦'; try { const packages = await window.TelePlayCore?.PaymentManager?.packages?.() || []; if (!packages.length) { if (status) status.textContent = 'ÐŸÐ°ÐºÐµÑ‚Ñ‹ Stars Ð¿Ð¾ÐºÐ° Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹.'; list.innerHTML = '<div class="shop-empty premium-packages-empty">ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ Gems-Ð¿Ð°ÐºÐµÑ‚Ñ‹ Ñ ÑÐµÑ€Ð²ÐµÑ€Ð°.<br><button type="button" class="premium-retry" data-premium-retry>ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€Ð¸Ñ‚ÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÑƒ</button></div>'; return; } if (status) status.textContent = 'Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ð¿Ð°ÐºÐµÑ‚ â€” Ð¾Ð¿Ð»Ð°Ñ‚Ð° Ð¾Ñ‚ÐºÑ€Ð¾ÐµÑ‚ÑÑ Ð²Ð½ÑƒÑ‚Ñ€Ð¸ Telegram.'; list.innerHTML = packages.map(item => { const totalGems = Number(item.totalGems ?? Number(item.gemsAmount || 0) + Number(item.bonus || 0)); const bonus = Number(item.bonus || 0); return `<button type="button" class="secondary-button premium-package" data-premium-package="${item.id}"><b>${format(totalGems)} ðŸ’Ž</b><span>${format(item.amount)} ${item.currency}${bonus ? ` Â· +${format(bonus)} Ð±Ð¾Ð½ÑƒÑ` : ''}</span></button>`; }).join(''); } catch (_) { if (status) status.textContent = 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Gems-Ð¿Ð°ÐºÐµÑ‚Ñ‹.'; list.innerHTML = '<div class="shop-empty premium-packages-empty">ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð¸ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÑƒ.<br><button type="button" class="premium-retry" data-premium-retry>ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€Ð¸Ñ‚ÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÑƒ</button></div>'; } }
-  function renderShop() {
-    const manager = window.TelePlayShop, config = window.TelePlayShopConfig;
-    if (!manager || !config) return;
-    const gameShop = activeGameShop ? window.TelePlayGameShops?.[activeGameShop] : null;
-    const gameMode = Boolean(gameShop);
-    const collection = gameMode ? gameShop.getCollection() : manager.collection();
-    if ($('shopCoins')) $('shopCoins').textContent = format(window.TelePlayCore?.CurrencyManager?.getCoins?.() ?? player()?.coins?.()); if ($('shopGems')) $('shopGems').textContent = format(window.TelePlayCore?.CurrencyManager?.getGems?.() ?? player()?.gems?.()); if ($('shopOwnedCount')) $('shopOwnedCount').textContent = collection.owned; if ($('shopTotalCount')) $('shopTotalCount').textContent = collection.total;
-    if ($('shopTitle')) $('shopTitle').textContent = gameMode ? gameShop.title : 'ÐœÐ°Ð³Ð°Ð·Ð¸Ð½';
-    if ($('gameShopToolbar')) $('gameShopToolbar').hidden = !gameMode;
-    if ($('gameShopLabel')) $('gameShopLabel').textContent = gameMode ? gameShop.title : '';
-    if ($('shopGameLinks')) { $('shopGameLinks').hidden = gameMode; $('shopGameLinks').innerHTML = gameMode ? '' : manager.gameShops().map(shop => `<button class="shop-game-launcher" type="button" data-game-shop="${shop.gameId}"><span>${games.find(game => game.id === shop.gameId)?.icon === 'car' ? 'â–¶' : 'âœ¦'}</span><b>${games.find(game => game.id === shop.gameId)?.title || shop.title}</b><small>ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¼Ð°Ð³Ð°Ð·Ð¸Ð½ â€º</small></button>`).join(''); }
-    const categories = gameMode ? gameShop.getCategories() : config.CATEGORIES;
-    const category = gameMode ? gameShopCategory : shopCategory;
-    if ($('shopTabs')) $('shopTabs').innerHTML = Object.entries(categories).map(([id, title]) => `<button class="shop-tab ${category === id ? 'active' : ''}" type="button" data-shop-category="${id}" aria-pressed="${category === id}">${title}</button>`).join('');
-    const items = gameMode ? gameShop.getItems(gameShopCategory) : manager.list(shopCategory); if ($('shopGrid')) $('shopGrid').innerHTML = items.length ? items.map(shopCard).join('') : '<div class="shop-empty">Ð’ ÑÑ‚Ð¾Ð¹ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ Ð¿Ð¾ÐºÐ° Ð¿ÑƒÑÑ‚Ð¾.</div>'; renderPremiumPackages();
-  }
+NÂˆBˆ[˜Ý[Ûˆ\]PØ][ÙÔÝ]Ê
+HÈÛÛœÝ]HH^Y\Š
+OË™Ù]ËŠ
+NÈYˆ
+]JH™[™\‘\Ú›Ø\™
+]JNÈÚ[™ÝË“™[Û”˜XÙQØ[YOË\]PØ][ÙÏËŠ
+NÈBˆ[˜Ý[ÛˆÙ]Ø]YÛÜžJØ]YÛÜžJHÈYˆ
+XØ]YÛÜšY\ÖØØ]YÛÜžWJH™]\›ŽÈØÝ[Y[œ]Y\žTÙ[XÝÜ[
+	ËX‰ÊK™›Ü‘XXÚ
+XˆOˆÈÛÛœÝXÝ]™HHX‹™]\Ù]˜Ø]YÛÜžHOOHØ]YÛÜžNÈX‹˜Û\ÜÓ\ÝÙÙÛJ	ØXÝ]™IËXÝ]™JNÈX‹œÙ]]šX]J	Ø\šXK\™\ÜÙY	ËÝš[™ÊXÝ]™JJNÈJNÈÛÛœÝš\ÚX›HHš\ÚX›QØ[Y\Ê
+K™š[\ŠØ[YHOˆØ]YÛÜžHOOH	Ø[	ÈØ[YK˜Ø]YÛÜžHOOHØ]YÛÜžJNÈ	
+	ÙØ[YQÜšY	ÊKš[›™\’SHš\ÚX›K›X\
+Ø[YPØ\™
+Kš›Ú[Š	ÉÊNÈ	
+	ÜÙXÝ[Û•]IÊK^ÛÛ[HØ]YÛÜžHOOH	Ø[	ÈÈ	ô$´`t-H4.4,ô`4bÉÈˆØ]YÛÜšY\ÖØØ]YÛÜžWNÈ	
+	ÜÙXÝ[ÛÛÝ[	ÊK^ÛÛ[H	Ýš\ÚX›K›[™ÝH	Ýš\ÚX›K›[™ÝOOHHÈ	ô.4,ô`4,	Èˆš\ÚX›K›[™ÝHÈ	ô.4,ô`4bÉÈˆ	ô.4,ô`	ßXÈ	
+	Ù[\TÝ]IÊKšY[ˆHš\ÚX›K›[™ÝˆÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ØØ][Ù×Ùš[\™Y	Ë[ÈØ]YÛÜžKš\ÚX›QØ[Y\Îˆš\ÚX›K›[™ÝJNÈBˆ[˜Ý[ÛˆÙ]ÛYUšY]ÊšY]ÈH	ÚÛYIÊHÈXœ˜\žSÜ[ˆHšY]ÈOOH	ÙØ[Y\ÉÎÈ	
+	ÚÛYPÛÛ[	ÊKšY[ˆHXœ˜\žSÜ[ŽÈ	
+	ÛXœ˜\žUšY]ÉÊKšY[ˆH[Xœ˜\žSÜ[ŽÈØÝ[Y[œ]Y\žTÙ[XÝÜ[
+	ÖÙ]KZÛYK[˜]—IÊK™›Ü‘XXÚ
+]ÛˆOˆÈÛÛœÝXÝ]™HH]Û‹™]\Ù]šÛYS˜]ˆOOH
+Xœ˜\žSÜ[ˆÈ	ÙØ[Y\ÉÈˆ	ÚÛYIÊNÈ]Û‹˜Û\ÜÓ\ÝÙÙÛJ	Ú\ËXXÝ]™IËXÝ]™JNÈ]Û‹œÙ]]šX]J	Ø\šXKXÝ\œ™[	ËXÝ]™HÈ	ÜYÙIÈˆ	Ù˜[ÙIÊNÈJNÈYˆ
+Xœ˜\žSÜ[ŠHÈÙ]Ø]YÛÜžJ	Ø[	ÊNÈÚ[™ÝËœØÜ›ÛÊÈÜˆ™Z]š[ÜŽˆ	ÜÛ[ÛÝ	ÈJNÈHÏË˜XÚÐ]ÛË–ÛXœ˜\žSÜ[ˆÈ	ÜÚÝÉÈˆ	ÚYI×OËŠ
+NÈBˆ[˜Ý[ÛˆÙ]›Ùš[T[™[
+]Û‹\ÓÜ[ŠHÈÛÛœÝÙXÝ[ÛˆH]Û‹˜ÛÜÙ\Ý
+	ÖÙ]K\›Ùš[K\ÙXÝ[Û—IÊNÈYˆ
+\ÙXÝ[ÛŠH™]\›ŽÈ]Û‹œÙ]]šX]J	Ø\šXKY^[™Y	ËÝš[™Ê\ÓÜ[ŠJNÈÙXÝ[Û‹˜Û\ÜÓ\ÝÙÙÛJ	Ú\Ë[Ü[‰Ë\ÓÜ[ŠNÈBˆ[˜Ý[ÛˆÛÛ\ÙT›Ùš[T[™[Ê
+HÈØÝ[Y[œ]Y\žTÙ[XÝÜ[
+	Ëœ›Ùš[K\ÙXÝ[Û‹]ÙÙÛVØ\šXKY^[™YHYH—IÊK™›Ü‘XXÚ
+]ÛˆOˆÙ]›Ùš[T[™[
+]Û‹˜[ÙJJNÈBˆ[˜Ý[ÛˆÜ[”›Ùš[J
+HÈÛÛ\ÙT›Ùš[T[™[Ê
+NÈÚÜÜ[ˆH˜[ÙNÈ›Ùš[SÜ[ˆHYNÈÝÜ™UšY]ËšY[ˆHYNÈ	
+	ÜÚÜØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈÛÛœÝ]HH^Y\Š
+OË™Ù]ËŠ
+HßNÈ™[™\”›Ùš[J]JNÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ü›Ùš[WÛÜ[™Y	Ë[ÈÛÝ\˜ÙNˆ	ÚÛYIÈJNÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ü›Ùš[WÝšY]×ÜÝ]ÉË[ÈØ[Y\Ô^YYˆ[X™\Š]KœÝ]\ÝXÜÏË™Ø[Y\Ô^YY]KœÝ]\ÝXÜÏËÝ[Ø[Y\È
+HJNÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ü›Ùš[WÝšY]×Ü™XÛÜ™ÉË[È™XÛÜ™Îˆ[X™\Š]KœÝ]\ÝXÜÏËœ™XÛÜ™ÐÛÝ[
+HJNÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈBˆ[˜Ý[ÛˆÛÜÙT›Ùš[J
+HÈ›Ùš[SÜ[ˆH˜[ÙNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆHYNÈÝÜ™UšY]ËšY[ˆH˜[ÙNÈÏË˜XÚÐ]ÛËšYJ
+NÈBˆ[˜Ý[ÛˆÜ[Ú[[™Ù\Ê
+HÈÚ[[™ÙT™]\›”›Ùš[HH›Ùš[SÜ[ŽÈ›Ùš[SÜ[ˆH˜[ÙNÈÚ[[™Ù\ÓÜ[ˆHYNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆHYNÈÝÜ™UšY]ËšY[ˆHYNÈ	
+	ØÚ[[™Ù\ÔØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈÚ[™ÝË•[T^PÚ[[™Ù\ÏËÝXÚÝ™XZÏËŠ
+NÈ™[™\Ú[[™Ù\Ê
+NÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ÙZ[WÛÜ[™Y	Ë[ÈÛÝ\˜ÙNˆÚ[[™ÙT™]\›”›Ùš[HÈ	Ü›Ùš[IÈˆ	ÚÛYIÈJNÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈBˆ[˜Ý[ÛˆÛÜÙPÚ[[™Ù\Ê
+HÈÚ[[™Ù\ÓÜ[ˆH˜[ÙNÈ	
+	ØÚ[[™Ù\ÔØÜ™Y[‰ÊKšY[ˆHYNÈYˆ
+Ú[[™ÙT™]\›”›Ùš[JHÈ›Ùš[SÜ[ˆHYNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈ™[™\”›Ùš[J^Y\Š
+OË™Ù]ËŠ
+HßJNÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈH[ÙHÈ›Ùš[SÜ[ˆH˜[ÙNÈÝÜ™UšY]ËšY[ˆH˜[ÙNÈÏË˜XÚÐ]ÛËšYJ
+NÈHBˆ[˜Ý[ÛˆÜ[”ÚÜ
 
-  function renderDashboard(data) {
-    if (!data) return;
-    const profile = data.profile || {}, progress = player()?.progress?.() || { level: 1, currentXP: 0, nextXP: 100, progress: 0 }, avatar = $('playerAvatar');
-    if (avatar) { avatar.textContent = ''; if (profile.avatar) { const image = document.createElement('img'); image.src = profile.avatar; image.alt = ''; avatar.appendChild(image); } else avatar.textContent = (profile.username || 'T').slice(0, 1).toUpperCase(); applyAvatarFrame(avatar); }
-    const xpPercent = Math.min(100, Math.max(0, Number(progress.progress) || 0)); if ($('playerNickname')) $('playerNickname').textContent = profile.username || 'Ð˜Ð³Ñ€Ð¾Ðº'; if ($('playerLevel')) $('playerLevel').textContent = progress.level; if ($('playerXp')) $('playerXp').textContent = `${progress.currentXP} / ${progress.nextXP} XP`; if ($('playerXpBar')) $('playerXpBar').style.width = `${xpPercent}%`;
-    $('walletCoins').textContent = format(data.coins); if ($('walletGems')) $('walletGems').textContent = format(data.gems); if ($('garageCoins')) $('garageCoins').textContent = format(data.coins);
-    const stats = data.statistics || {}, records = Object.values(data.records || {}).map(item => Number(item?.bestScore || 0)); if ($('quickGames')) $('quickGames').textContent = format(stats.gamesPlayed); if ($('quickBest')) $('quickBest').textContent = format(Math.max(0, ...records)); if ($('quickCoins')) $('quickCoins').textContent = format(data.coins);
-    const continueData = home()?.continueGame?.(data, games), recommendation = fallbackGame(), item = continueData || (recommendation ? { game: recommendation, progress: 0, isLastPlayed: false } : null), continueCard = $('continueCard');
-    if (continueCard) { continueCard.hidden = !item; if (item) { $('continueKicker').textContent = item.isLastPlayed ? 'ðŸ”¥ ÐŸÐ ÐžÐ”ÐžÐ›Ð–Ð˜Ð¢Ð¬' : 'ðŸŽ® ÐŸÐžÐŸÐ ÐžÐ‘Ð£Ð™ Ð˜Ð“Ð Ð£'; $('continueTitle').textContent = item.game.title; const record = Number(data.records?.[item.game.id]?.bestScore || stats.bestResults?.[item.game.id] || 0), bestText = record > 0 ? `Ð›ÑƒÑ‡ÑˆÐ¸Ð¹: ${format(record)}` : 'ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´ Ð¶Ð´Ñ‘Ñ‚ Ñ‚ÐµÐ±Ñ'; $('continueProgress').textContent = item.isLastPlayed ? (item.progress > 0 ? `ÐŸÑ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸ Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑÑ: ${item.progress}% Â· ${bestText}` : record > 0 ? `Ð’ÐµÑ€Ð½Ð¸ÑÑŒ Ð¸ Ð¿Ð¾Ð±ÐµÐ¹ ÑÐ²Ð¾Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´ Â· ${bestText}` : 'Ð’ÐµÑ€Ð½Ð¸ÑÑŒ Ð¸ Ð¿Ð¾ÑÑ‚Ð°Ð²ÑŒ Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´') : 'ÐžÑ‚ÐºÑ€Ð¾Ð¹ Ð¸Ð³Ñ€Ñƒ Ð¸ Ð¿Ð¾ÑÑ‚Ð°Ð²ÑŒ Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´'; $('continueIcon').textContent = item.isLastPlayed ? 'ðŸ”¥' : 'ðŸŽ®'; $('continueButton').onclick = () => navigateGame(item.game.id); } }
-    if (recommendation) $('heroStartButton').onclick = () => navigateGame(recommendation.id);
-    if (profileOpen) renderProfile(data); if (challengesOpen) renderChallenges(); if (shopOpen) renderShop();
-  }
-  function updateCatalogStats() { const data = player()?.get?.(); if (data) renderDashboard(data); window.NeonRaceGame?.updateCatalog?.(); }
-  function setCategory(category) { if (!categories[category]) return; document.querySelectorAll('.tab').forEach(tab => { const active = tab.dataset.category === category; tab.classList.toggle('active', active); tab.setAttribute('aria-pressed', String(active)); }); const visible = games.filter(game => category === 'all' || game.category === category); $('gameGrid').innerHTML = visible.map(GameCard).join(''); $('sectionTitle').textContent = category === 'all' ? 'Ð’ÑÐµ Ð¸Ð³Ñ€Ñ‹' : categories[category]; $('sectionCount').textContent = `${visible.length} ${visible.length === 1 ? 'Ð¸Ð³Ñ€Ð°' : visible.length < 5 ? 'Ð¸Ð³Ñ€Ñ‹' : 'Ð¸Ð³Ñ€'}`; $('emptyState').hidden = visible.length > 0; }
-  function setProfilePanel(button, isOpen) { const section = button.closest('[data-profile-section]'); if (!section) return; button.setAttribute('aria-expanded', String(isOpen)); section.classList.toggle('is-open', isOpen); }
-  function collapseProfilePanels() { document.querySelectorAll('.profile-section-toggle[aria-expanded="true"]').forEach(button => setProfilePanel(button, false)); }
-  function openProfile() { collapseProfilePanels(); shopOpen = false; profileOpen = true; storeView.hidden = true; $('shopScreen').hidden = true; $('profileScreen').hidden = false; const data = player()?.get?.() || {}; renderProfile(data); window.TelePlayCore?.Analytics?.track?.('profile_opened', null, { source: 'home' }); window.TelePlayCore?.Analytics?.track?.('profile_view_stats', null, { gamesPlayed: Number(data.statistics?.gamesPlayed || data.statistics?.totalGames || 0) }); window.TelePlayCore?.Analytics?.track?.('profile_view_records', null, { records: Number(data.statistics?.recordsCount || 0) }); tg?.BackButton?.show(); }
-  function closeProfile() { profileOpen = false; $('profileScreen').hidden = true; storeView.hidden = false; tg?.BackButton?.hide(); }
-  function openChallenges() { challengeReturnProfile = profileOpen; profileOpen = false; challengesOpen = true; $('profileScreen').hidden = true; storeView.hidden = true; $('challengesScreen').hidden = false; window.TelePlayChallenges?.touchStreak?.(); renderChallenges(); window.TelePlayCore?.Analytics?.track?.('daily_opened', null, { source: challengeReturnProfile ? 'profile' : 'home' }); tg?.BackButton?.show(); }
-  function closeChallenges() { challengesOpen = false; $('challengesScreen').hidden = true; if (challengeReturnProfile) { profileOpen = true; $('profileScreen').hidden = false; renderProfile(player()?.get?.() || {}); tg?.BackButton?.show(); } else { profileOpen = false; storeView.hidden = false; tg?.BackButton?.hide(); } }
-  function openShop() { shopOpen = true; activeGameShop = null; gameShopCategory = 'all'; profileOpen = false; challengesOpen = false; storeView.hidden = true; $('profileScreen').hidden = true; $('challengesScreen').hidden = true; $('shopScreen').hidden = false; renderShop(); window.TelePlayCore?.Analytics?.track?.('shop_opened', null, { category: shopCategory }); window.TelePlayCore?.Analytics?.track?.('collection_opened', null, { source: 'shop' }); tg?.BackButton?.show(); }
-  function closeShop() { shopOpen = false; activeGameShop = null; $('shopScreen').hidden = true; storeView.hidden = false; tg?.BackButton?.hide(); updateCatalogStats(); }
-  function isAdminRoute() { return location.pathname === '/admin' || location.hash === '#/admin'; }
-  function openAdmin() { adminOpen = true; profileOpen = false; challengesOpen = false; shopOpen = false; storeView.hidden = true; $('profileScreen').hidden = true; $('challengesScreen').hidden = true; $('shopScreen').hidden = true; $('adminScreen').hidden = false; window.TelePlayAdminPanel?.open?.(); tg?.BackButton?.show(); }
-  function closeAdmin(replaceRoute = true) { adminOpen = false; $('adminScreen').hidden = true; storeView.hidden = false; if (replaceRoute && isAdminRoute()) history.replaceState(null, '', location.pathname === '/admin' ? '/' : `${location.pathname}${location.search}`); tg?.BackButton?.hide(); updateCatalogStats(); }
-  function openSoon(game) { $('soonScreen').hidden = false; $('soonTitle').textContent = game.title; $('soonSubtitle').textContent = game.subtitle; $('soonArt').innerHTML = GameArtwork(game); $('soonScreen').scrollTop = 0; }
-  function openGame(game) { profileOpen = false; challengesOpen = false; shopOpen = false; $('profileScreen').hidden = true; $('challengesScreen').hidden = true; $('shopScreen').hidden = true; storeView.hidden = true; $('garageScreen').hidden = true; $('soonScreen').hidden = true; const component = window[game.component], options = { onHome: backToCatalog, onWalletChange: updateCatalogStats }; if (game.status === 'available' && component?.open) component.open(options); else if (game.status === 'available' && component?.start) component.start(options); else openSoon(game); tg?.BackButton?.show(); }
-  function hideGames() { games.forEach(game => window[game.component]?.hide?.()); $('garageScreen').hidden = true; }
-  function renderRoute() { const id = location.hash.startsWith('#/game/') ? location.hash.slice(7) : null, game = games.find(item => item.id === id); if (isAdminRoute()) { hideGames(); $('soonScreen').hidden = true; openAdmin(); return; } if (adminOpen) closeAdmin(false); hideGames(); $('soonScreen').hidden = true; if (game) { if (!storeView.hidden) catalogScroll = window.scrollY; lastGame = game.id; openGame(game); } else if (!profileOpen) { closeProfile(); requestAnimationFrame(() => { window.scrollTo(0, catalogScroll); document.querySelector(`[data-game="${lastGame}"]`)?.focus({ preventScroll: true }); }); } }
-  function navigateGame(id) { if (!games.some(game => game.id === id)) return; history.pushState({ teleplayGame: true }, '', `#/game/${id}`); renderRoute(); }
-  function navigateAdmin() { history.pushState({ teleplayAdmin: true }, '', '#/admin'); renderRoute(); }
-  function backToCatalog() { if (history.state?.teleplayGame) history.back(); else { history.replaceState(null, '', location.pathname + location.search); renderRoute(); } }
-  function saveSetting(id, key) { const input = $(id); if (input) player()?.updateSettings?.({ [key]: input.checked }); }
+HÈÚÜÜ[ˆHYNÈXÝ]™QØ[YTÚÜH[ÈØ[YTÚÜØ]YÛÜžHH	Ø[	ÎÈ›Ùš[SÜ[ˆH˜[ÙNÈÚ[[™Ù\ÓÜ[ˆH˜[ÙNÈÝÜ™UšY]ËšY[ˆHYNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ØÚ[[™Ù\ÔØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ÜÚÜØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈ™[™\”ÚÜ
 
-  document.querySelector('.category-tabs').innerHTML = Object.entries(categories).map(([id, title]) => `<button class="tab" data-category="${id}" aria-pressed="false">${title}</button>`).join(''); $('gameGrid').addEventListener('click', event => { const card = event.target.closest('[data-game]'); if (card) navigateGame(card.dataset.game); }); document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setCategory(tab.dataset.category)));
-  $('premiumPackagesList')?.addEventListener('click', async event => { const retry = event.target.closest('[data-premium-retry]'); if (retry) { retry.disabled = true; window.TelePlayCore?.PaymentManager?.resetPackages?.(); await renderPremiumPackages(); return; } const button = event.target.closest('[data-premium-package]'); if (!button) return; button.disabled = true; const status = $('premiumPackagesStatus'); if (status) status.textContent = 'Ð¡Ð¾Ð·Ð´Ð°Ñ‘Ð¼ Ð·Ð°Ñ‰Ð¸Ñ‰Ñ‘Ð½Ð½Ñ‹Ð¹ invoiceâ€¦'; try { const result = await window.TelePlayCore?.PaymentManager?.buyPackage?.(button.dataset.premiumPackage); if (!result?.ok) { window.TelePlayCore?.HapticManager?.notification?.('warning'); if (status) { const messages = { telegram_auth_required: 'ÐžÑ‚ÐºÑ€Ð¾Ð¹ TelePlay Ñ‡ÐµÑ€ÐµÐ· Telegram Ð¸ Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð¸.', backend_http_401: 'Ð¡ÐµÑÑÐ¸Ñ Telegram ÑƒÑÑ‚Ð°Ñ€ÐµÐ»Ð°. Ð—Ð°ÐºÑ€Ð¾Ð¹ Ð¸ ÑÐ½Ð¾Ð²Ð° Ð¾Ñ‚ÐºÑ€Ð¾Ð¹ Mini App.', payment_package_unavailable: 'ÐŸÐ°ÐºÐµÑ‚ Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½.', telegram_payment_api_error: 'Telegram Ð½Ðµ Ð¿Ñ€Ð¸Ð½ÑÐ» invoice. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.', telegram_invoice_unavailable: 'Invoice Ð½Ðµ Ð±Ñ‹Ð» ÑÐ¾Ð·Ð´Ð°Ð½. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.', telegram_invoice_failed: 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¾Ð¿Ð»Ð°Ñ‚Ñƒ Telegram.' }; status.textContent = messages[result.reason] || 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð½Ð°Ñ‡Ð°Ñ‚ÑŒ Ð¾Ð¿Ð»Ð°Ñ‚Ñƒ. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.'; } } else { if (status) status.textContent = result.status === 'completed' ? 'Gems Ð½Ð°Ñ‡Ð¸ÑÐ»ÐµÐ½Ñ‹.' : result.status === 'paid' ? 'ÐžÐ¿Ð»Ð°Ñ‚Ð° Ð¿Ñ€Ð¸Ð½ÑÑ‚Ð°, Ð¾Ð¶Ð¸Ð´Ð°ÐµÐ¼ Ð¿Ð¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¸Ðµâ€¦' : 'ÐžÐ¿Ð»Ð°Ñ‚Ð° Ð¾Ñ‚Ð¼ÐµÐ½ÐµÐ½Ð°.'; updateCatalogStats(); } } catch (_) { if (status) status.textContent = 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð½Ð°Ñ‡Ð°Ñ‚ÑŒ Ð¾Ð¿Ð»Ð°Ñ‚Ñƒ. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.'; } finally { button.disabled = false; } });
-    $('closeSoon').addEventListener('click', backToCatalog); $('soonHome').addEventListener('click', backToCatalog); $('closeGame').addEventListener('click', backToCatalog); $('backToStore').addEventListener('click', backToCatalog); $('playerHeader').addEventListener('click', openProfile); $('openShop').addEventListener('click', openShop); $('closeShop').addEventListener('click', closeShop); $('backToTelePlayShop').addEventListener('click', () => { activeGameShop = null; gameShopCategory = 'all'; renderShop(); }); $('shopCollectionButton').addEventListener('click', () => window.TelePlayCore?.Analytics?.track?.('collection_opened', null, { source: 'shop_summary' })); $('shopGameLinks').addEventListener('click', event => { const button = event.target.closest('[data-game-shop]'); if (!button) return; activeGameShop = button.dataset.gameShop; gameShopCategory = 'all'; renderShop(); window.TelePlayCore?.Analytics?.track?.('game_shop_opened', activeGameShop, { source: 'teleplay_shop' }); }); $('shopTabs').addEventListener('click', event => { const tab = event.target.closest('[data-shop-category]'); if (tab) { if (activeGameShop) gameShopCategory = tab.dataset.shopCategory; else shopCategory = tab.dataset.shopCategory; renderShop(); } }); $('shopGrid').addEventListener('click', event => { const card = event.target.closest('[data-shop-item]'); if (!card) return; const id = card.dataset.shopItem, action = event.target.closest('[data-shop-action]')?.dataset.shopAction, shop = activeGameShop ? window.TelePlayGameShops?.[activeGameShop] : null; if (!action) { const item = shop ? shop.item(id) : window.TelePlayShop?.item?.(id), price = priceInfo(item); window.TelePlayCore?.Analytics?.track?.('item_viewed', item?.gameId || (activeGameShop || null), { itemId: id, category: item?.category, currencyType: price.currency }); if (price.currency === 'gems') window.TelePlayCore?.Analytics?.track?.('premium_item_viewed', item?.gameId || (activeGameShop || null), { itemId: id, category: item?.category }); return; } const item = shop ? shop.item(id) : window.TelePlayShop?.item?.(id); const result = action === 'buy' ? (shop ? shop.buyItem(id) : window.TelePlayShop?.buy?.(id)) : action === 'equip' ? (shop ? shop.equipItem(id) : window.TelePlayShop?.equip?.(id)) : (shop ? shop.unequipItem(item?.slot) : window.TelePlayShop?.unequip?.(item?.slot)); if (!result?.ok) { if (result?.reason === 'insufficient_coins' || result?.reason === 'insufficient_gems') window.TelePlayCore?.HapticManager?.notification?.('warning'); return; } window.TelePlayCore?.HapticManager?.impact?.(action === 'buy' ? 'medium' : 'light'); renderShop(); updateCatalogStats(); flashShopCard(id, action === 'buy' ? 'purchase' : 'equip'); }); $('closeProfile').addEventListener('click', closeProfile); $('profileChallengesButton').addEventListener('click', openChallenges); $('closeChallenges').addEventListener('click', closeChallenges); $('profileScreen').addEventListener('click', event => { const button = event.target.closest('.profile-section-toggle'); if (button) setProfilePanel(button, button.getAttribute('aria-expanded') !== 'true'); }); $('favoriteGamesList').addEventListener('click', event => { const row = event.target.closest('[data-profile-game]'); if (row) navigateGame(row.dataset.profileGame); }); $('profileRecordsList').addEventListener('click', event => { const row = event.target.closest('[data-profile-game]'); if (row) navigateGame(row.dataset.profileGame); });
-  window.TelePlayAdminPanel?.setCloseHandler?.(closeAdmin); window.TelePlayAdminPanel?.mountLauncher?.($('adminActionSlot'), navigateAdmin);
-  tg?.BackButton?.onClick(() => { const garageGame = games.find(game => window[game.component]?.isGarageOpen?.()); if (garageGame) window[garageGame.component].closeGarage(); else if (adminOpen) closeAdmin(); else if (shopOpen && activeGameShop) { activeGameShop = null; gameShopCategory = 'all'; renderShop(); } else if (shopOpen) closeShop(); else if (challengesOpen) closeChallenges(); else if (profileOpen) closeProfile(); else backToCatalog(); }); window.addEventListener('popstate', renderRoute); window.addEventListener('hashchange', renderRoute); window.addEventListener('storage', updateCatalogStats);
-  const watchedEvents = ['game_started', 'game_finished', 'new_record', 'level_up', 'rank_changed', 'mastery_up', 'xp_received', 'achievement_unlocked', 'title_unlocked', 'coins_earned', 'coins_spent', 'gems_received', 'gems_spent', 'premium_item_purchased', 'profile_updated', 'challenge_completed', 'weekly_completed', 'streak_extended', 'streak_lost', 'admin_panel_opened'];
-  watchedEvents.forEach(event => window.addEventListener(`teleplay:${event}`, () => { updateCatalogStats(); window.TelePlayAdminPanel?.refresh?.(); }));
-  window.addEventListener('teleplay:data-status', event => renderDataStatus(event.detail));
-  $('dataStatusRetry')?.addEventListener('click', async event => { const button = event.currentTarget; button.disabled = true; await dataProvider()?.retry?.(); player()?.initialize?.(); updateCatalogStats(); window.TelePlayAdminPanel?.refresh?.(); renderDataStatus(dataProvider()?.status?.()); button.disabled = false; });
-  async function bootstrap() {
-    await dataProvider()?.initialize?.();
-    $('profileLoading')?.classList.add('is-ready');
-    player()?.initialize?.(); window.TelePlayChallenges?.initialize?.(); setCategory('all'); updateCatalogStats(); window.TelePlayAdminPanel?.mountLauncher?.($('adminActionSlot'), navigateAdmin); renderDataStatus(dataProvider()?.status?.()); renderRoute();
-  }
-  bootstrap().catch(() => { $('profileLoading')?.classList.add('is-ready'); player()?.initialize?.(); window.TelePlayChallenges?.initialize?.(); setCategory('all'); updateCatalogStats(); renderDataStatus(dataProvider()?.status?.()); renderRoute(); });
-})();
+NÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ÜÚÜÛÜ[™Y	Ë[ÈØ]YÛÜžNˆÚÜØ]YÛÜžHJNÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ØÛÛXÝ[Û—ÛÜ[™Y	Ë[ÈÛÝ\˜ÙNˆ	ÜÚÜ	ÈJNÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈBˆ[˜Ý[ÛˆÛÜÙTÚÜ
+
+HÈÚÜÜ[ˆH˜[ÙNÈXÝ]™QØ[YTÚÜH[È	
+	ÜÚÜØÜ™Y[‰ÊKšY[ˆHYNÈÝÜ™UšY]ËšY[ˆH˜[ÙNÈÏË˜XÚÐ]ÛËšYJ
+NÈ\]PØ][ÙÔÝ]Ê
+NÈBˆ[˜Ý[Ûˆ\ÐYZ[”›Ý]J
+HÈ™]\›ˆØØ][Û‹œ]˜[YHOOH	ËØYZ[‰ÈØØ][Û‹š\ÚOOH	ÈËØYZ[‰ÎÈBˆ[˜Ý[ÛˆÜ[YZ[Š
+HÈYZ[“Ü[ˆHYNÈ›Ùš[SÜ[ˆH˜[ÙNÈÚ[[™Ù\ÓÜ[ˆH˜[ÙNÈÚÜÜ[ˆH˜[ÙNÈÝÜ™UšY]ËšY[ˆHYNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ØÚ[[™Ù\ÔØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ÜÚÜØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ØYZ[”ØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈÚ[™ÝË•[T^PYZ[”[™[Ë›Ü[ËŠ
+NÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈBˆ[˜Ý[ÛˆÛÜÙPYZ[Š™\XÙT›Ý]HHYJHÈYZ[“Ü[ˆH˜[ÙNÈ	
+	ØYZ[”ØÜ™Y[‰ÊKšY[ˆHYNÈÝÜ™UšY]ËšY[ˆH˜[ÙNÈYˆ
+™\XÙT›Ý]H	‰ˆ\ÐYZ[”›Ý]J
+JH\ÝÜžKœ™\XÙTÝ]J[	ÉËØØ][Û‹œ]˜[YHOOH	ËØYZ[‰ÈÈ	ËÉÈˆ	ÛØØ][Û‹œ]˜[Y_IÛØØ][Û‹œÙX\˜ÚX
+NÈÏË˜XÚÐ]ÛËšYJ
+NÈ\]PØ][ÙÔÝ]Ê
+NÈBˆ[˜Ý[ÛˆÜ[”ÛÛÛŠØ[YJHÈ	
+	ÜÛÛÛ”ØÜ™Y[‰ÊKšY[ˆH˜[ÙNÈ	
+	ÜÛÛÛ•]IÊK^ÛÛ[HØ[YK]NÈ	
+	ÜÛÛÛ”ÝX]IÊK^ÛÛ[HØ[YKœÝX]NÈ	
+	ÜÛÛÛ\	ÊKš[›™\’SHØ[YP\ÛÜšÊØ[YJNÈ	
+	ÜÛÛÛ”ØÜ™Y[‰ÊKœØÜ›ÛÜHÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ØÛÛZ[™×ÜÛÛÛ—ÝšY]ÙY	ËØ[YKšYÈØ]YÛÜžNˆØ[YK˜Ø]YÛÜžHJNÈBˆ[˜Ý[ÛˆÜ[‘Ø[YJØ[YJHÈYˆ
+Z\Õš\ÚX›QØ[YJØ[YJJHÈ˜XÚÕÐØ][ÙÊ
+NÈ™]\›ŽÈH›Ùš[SÜ[ˆH˜[ÙNÈÚ[[™Ù\ÓÜ[ˆH˜[ÙNÈÚÜÜ[ˆH˜[ÙNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ØÚ[[™Ù\ÔØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ÜÚÜØÜ™Y[‰ÊKšY[ˆHYNÈÝÜ™UšY]ËšY[ˆHYNÈ	
+	ÙØ\˜YÙTØÜ™Y[‰ÊKšY[ˆHYNÈ	
+	ÜÛÛÛ”ØÜ™Y[‰ÊKšY[ˆHYNÈÛÛœÝÛÛ\Û™[HÚ[™ÝÖÙØ[YK˜ÛÛ\Û™[KÜ[ÛœÈHÈÛ’ÛYNˆ˜XÚÕÐØ][ÙËÛ•Ø[]Ú[™ÙNˆ\]PØ][ÙÔÝ]ÈNÈYˆ
+
+Ø[YKœÝ]\ÈOOH	Ø]˜Z[X›IÈØ[YKœÝ]\ÈOOH	Ù[[ÉÊH	‰ˆÛÛ\Û™[Ë›Ü[ŠHÛÛ\Û™[›Ü[ŠÜ[ÛœÊNÈ[ÙHYˆ
+
+Ø[YKœÝ]\ÈOOH	Ø]˜Z[X›IÈØ[YKœÝ]\ÈOOH	Ù[[ÉÊH	‰ˆÛÛ\Û™[ËœÝ\
+HÛÛ\Û™[œÝ\
+Ü[ÛœÊNÈ[ÙHÜ[”ÛÛÛŠØ[YJNÈÏË˜XÚÐ]ÛËœÚÝÊ
+NÈBˆ[˜Ý[ÛˆYQØ[Y\Ê
+HÈØ[Y\Ë™›Ü‘XXÚ
+Ø[YHOˆÚ[™ÝÖÙØ[YK˜ÛÛ\Û™[OËšYOËŠ
+JNÈ	
+	ÙØ\˜YÙTØÜ™Y[‰ÊKšY[ˆHYNÈBˆ[˜Ý[Ûˆ™[™\”›Ý]J
+HÈÛÛœÝYHØØ][Û‹š\ÚœÝ\ÕÚ]
+	ÈËÙØ[YKÉÊHÈØØ][Û‹š\ÚœÛXÙJÊHˆ[Ø[YHHØ[Y\Ë™š[™
+][HOˆ][KšYOOHY
+NÈYˆ
+\ÐYZ[”›Ý]J
+JHÈYQØ[Y\Ê
+NÈ	
+	ÜÛÛÛ”ØÜ™Y[‰ÊKšY[ˆHYNÈÜ[YZ[Š
+NÈ™]\›ŽÈHYˆ
+YZ[“Ü[ŠHÛÜÙPYZ[Š˜[ÙJNÈYQØ[Y\Ê
+NÈ	
+	ÜÛÛÛ”ØÜ™Y[‰ÊKšY[ˆHYNÈYˆ
+Ø[YH	‰ˆ\Õš\ÚX›QØ[YJØ[YJJHÈYˆ
+\ÝÜ™UšY]ËšY[ŠHØ][ÙÔØÜ›ÛHÚ[™ÝËœØÜ›ÛNÈ\ÝØ[YHHØ[YKšYÈÜ[‘Ø[YJØ[YJNÈH[ÙHYˆ
+Ø[YJHÈ\ÝÜžKœ™\XÙTÝ]J[	ÉËØØ][Û‹œ]˜[YH
+ÈØØ][Û‹œÙX\˜Ú
+NÈÙ]ÛYUšY]Ê	ÚÛYIÊNÈH[ÙHYˆ
+\›Ùš[SÜ[ŠHÈÛÜÙT›Ùš[J
+NÈÙ]ÛYUšY]Ê	ÚÛYIÊNÈ™\]Y\Ý[š[X][Û‘œ˜[YJ
+
+HOˆÈÚ[™ÝËœØÜ›ÛÊØ][ÙÔØÜ›Û
+NÈØÝ[Y[œ]Y\žTÙ[XÝÜŠÙ]KYØ[YOH‰Û\ÝØ[Y_H—X
+OË™›ØÝ\ÊÈ™]™[ØÜ›ÛˆYHJNÈJNÈHBˆ[˜Ý[Ûˆ˜]šYØ]QØ[YJYÛÝ\˜ÙHH	ØØ][ÙÉÊHÈÛÛœÝØ[YHHØ[Y\Ë™š[™
+][HOˆ][KšYOOHY
+NÈYˆ
+YØ[YHZ\Õš\ÚX›QØ[YJØ[YJJH™]\›ŽÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ÙØ[YWÜÙ[XÝY	ËØ[YKšYÈÛÝ\˜ÙK]˜Z[Xš[]NˆØ[YKœÝ]\ÈJNÈ\ÝÜžKœ\ÚÝ]JÈ[\^QØ[YNˆYHK	ÉËËÙØ[YKÉÚYX
+NÈ™[™\”›Ý]J
+NÈBˆ[˜Ý[Ûˆ˜]šYØ]PYZ[Š
+HÈ\ÝÜžKœ\ÚÝ]JÈ[\^PYZ[ŽˆYHK	ÉË	ÈËØYZ[‰ÊNÈ™[™\”›Ý]J
+NÈBˆ[˜Ý[Ûˆ˜XÚÕÐØ][ÙÊ
+HÈYˆ
+\ÝÜžKœÝ]OË[\^QØ[YJH\ÝÜžK˜˜XÚÊ
+NÈ[ÙHÈ\ÝÜžKœ™\XÙTÝ]J[	ÉËØØ][Û‹œ]˜[YH
+ÈØØ][Û‹œÙX\˜Ú
+NÈ™[™\”›Ý]J
+NÈHBˆ[˜Ý[ÛˆØ]™TÙ][™ÊYÙ^JHÈÛÛœÝ[œ]H	
+Y
+NÈYˆ
+[œ]
+H^Y\Š
+OË\]TÙ][™ÜÏËŠÈÚÙ^WNˆ[œ]˜ÚXÚÙYJNÈB‚ˆØÝ[Y[œ]Y\žTÙ[XÝÜŠ	Ë˜Ø]YÛÜžK]XœÉÊKš[›™\’SHØš™XÝ™[šY\ÊØ]YÛÜšY\ÊK›X\
+
+ÚY]WJHOˆ]ÛˆÛ\ÜÏHXˆˆ]KXØ]YÛÜžOH‰ÚYHˆ\šXK\™\ÜÙYH™˜[ÙH‰Ý]_OØ]Û˜
+Kš›Ú[Š	ÉÊNÈ	
+	ÙØ[YQÜšY	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝØ\™H]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]KYØ[YWIÊNÈYˆ
+Ø\™
+H˜]šYØ]QØ[YJØ\™™]\Ù]™Ø[YJNÈJNÈØÝ[Y[œ]Y\žTÙ[XÝÜ[
+	ËX‰ÊK™›Ü‘XXÚ
+XˆOˆX‹˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÙ]Ø]YÛÜžJX‹™]\Ù]˜Ø]YÛÜžJJJNÈ	
+	Ü™XÛÛ[Y[™][ÛœÓ\Ý	ÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝØ\™H]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\™XÛÛ[Y[™][Û‹YØ[YWIÊNÈYˆ
+Ø\™
+H˜]šYØ]QØ[YJØ\™™]\Ù]œ™XÛÛ[Y[™][Û‘Ø[YK	Ü™XÛÛ[Y[™][Û‰ÊNÈJNÈ	
+	Ø[Ø[Y\Ð]Û‰ÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÙ]ÛYUšY]Ê	ÙØ[Y\ÉÊJNÈ	
+	ÛÜ[‘Ù[\ÉÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[”ÚÜ
+NÂˆ	
+	Ü™[Z][TXÚØYÙ\Ó\Ý	ÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË\Þ[˜È]™[OˆÈÛÛœÝ™]žHH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\™[Z][K\™]žWIÊNÈYˆ
+™]žJHÈ™]žK™\ØX›YHYNÈÚ[™ÝË•[T^PÛÜ™OË”^[Y[X[˜YÙ\Ëœ™\Ù]XÚØYÙ\ÏËŠ
+NÈ]ØZ]™[™\”™[Z][TXÚØYÙ\Ê
+NÈ™]\›ŽÈHÛÛœÝ]ÛˆH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\™[Z][K\XÚØYÙWIÊNÈYˆ
+X]ÛŠH™]\›ŽÈ]Û‹™\ØX›YHYNÈÛÛœÝÝ]\ÈH	
+	Ü™[Z][TXÚØYÙ\ÔÝ]\ÉÊNÈYˆ
+Ý]\ÊHÝ]\Ë^ÛÛ[H	ô(t/´-ô-4,4dt/4-ô,4bt.4btdt/t/tbô.H[›ÚXÙx )‰ÎÈžHÈÛÛœÝ™\Ý[H]ØZ]Ú[™ÝË•[T^PÛÜ™OË”^[Y[X[˜YÙ\Ë˜^TXÚØYÙOËŠ]Û‹™]\Ù]œ™[Z][TXÚØYÙJNÈYˆ
+\™\Ý[Ë›ÚÊHÈÚ[™ÝË•[T^PÛÜ™OË’\XÓX[˜YÙ\Ë››ÝYšXØ][ÛËŠ	ÝØ\›š[™ÉÊNÈYˆ
+Ý]\ÊHÈÛÛœÝY\ÜØYÙ\ÈHÈ[YÜ˜[WØ]]Ü™\]Z\™Yˆ	ô'´`´.´`4/´.H[T^H4aô-t`4-t-È[YÜ˜[H4.4/ô/´,´`´/´`4.‰Ë˜XÚÙ[™ÚÍNˆ	ô(t-t`t`t.4cÈ[YÜ˜[H4`ô`t`´,4`4-t.ô,ˆ4%ô,4.´`4/´.H4.4`t/t/´,´,4/´`´.´`4/´.HZ[šH\‰Ë^[Y[ÜXÚØYÙWÝ[˜]˜Z[X›Nˆ	ô'ô,4.´-t`ˆ4,´`4-t/4-t/t/t/ˆ4/t-t-4/´`t`´`ô/ô-t/K‰Ë[YÜ˜[WÜ^[Y[Ø\WÙ\œ›ÜŽˆ	Õ[YÜ˜[H4/t-H4/ô`4.4/tcô.È[›ÚXÙKˆ4'ô/´/ô`4/´,t`ô.H4-tbtdH4`4,4-Ë‰Ë[YÜ˜[WÚ[›ÚXÙWÝ[˜]˜Z[X›Nˆ	Ò[›ÚXÙH4/t-H4,tbô.È4`t/´-ô-4,4/Kˆ4'ô/´/ô`4/´,t`ô.H4-tbtdH4`4,4-Ë‰Ë[YÜ˜[WÚ[›ÚXÙWÙ˜Z[Yˆ	ô't-H4`ô-4,4.ô/´`tc4/´`´.´`4bô`´c4/´/ô.ô,4`´`È[YÜ˜[K‰ÈNÈÝ]\Ë^ÛÛ[HY\ÜØYÙ\ÖÜ™\Ý[œ™X\ÛÛ—H	ô't-H4`ô-4,4.ô/´`tc4/t,4aô,4`´c4/´/ô.ô,4`´`Ëˆ4'ô/´/ô`4/´,t`ô.H4-tbtdH4`4,4-Ë‰ÎÈHH[ÙHÈYˆ
+Ý]\ÊHÝ]\Ë^ÛÛ[H™\Ý[œÝ]\ÈOOH	ØÛÛ\]Y	ÈÈ	ÑÙ[\È4/t,4aô.4`t.ô-t/tbË‰Èˆ™\Ý[œÝ]\ÈOOH	ÜZY	ÈÈ	ô'´/ô.ô,4`´,4/ô`4.4/tcô`´,4/´-´.4-4,4-t/4/ô/´-4`´,´-t`4-´-4-t/t.4-x )‰Èˆ	ô'´/ô.ô,4`´,4/´`´/4-t/t-t/t,‰ÎÈ\]PØ][ÙÔÝ]Ê
+NÈHHØ]Ú
+ÊHÈYˆ
+Ý]\ÊHÝ]\Ë^ÛÛ[H	ô't-H4`ô-4,4.ô/´`tc4/t,4aô,4`´c4/´/ô.ô,4`´`Ëˆ4'ô/´/ô`4/´,t`ô.H4-tbtdH4`4,4-Ë‰ÎÈHš[˜[HÈ]Û‹™\ØX›YH˜[ÙNÈHJNÂˆ	
+	ØÛÜÙTÛÛÛ‰ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË˜XÚÕÐØ][ÙÊNÈ	
+	ÜÛÛÛ’ÛYIÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË˜XÚÕÐØ][ÙÊNÈ	
+	ØÛÜÙQØ[YIÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË˜XÚÕÐØ][ÙÊNÈ	
+	Ø˜XÚÕÔÝÜ™IÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË˜XÚÕÐØ][ÙÊNÈ	
+	Ü^Y\’XY\‰ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[”›Ùš[JNÈ	
+	ÛÜ[”ÚÜ	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[”ÚÜ
+NÈ	
+	ÚÛYS˜]’ÛYIÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÙ]ÛYUšY]Ê	ÚÛYIÊJNÈ	
+	ÚÛYS˜]‘Ø[Y\ÉÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÙ]ÛYUšY]Ê	ÙØ[Y\ÉÊJNÈ	
+	ÚÛYS˜]Ú[[™Ù\ÉÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[Ú[[™Ù\ÊNÈ	
+	ÚÛYS˜]”›Ùš[IÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[”›Ùš[JNÈ	
+	ÚÛYS˜]”ÚÜ	ÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[”ÚÜ
+NÈ	
+	ØÛÜÙTÚÜ	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÛÜÙTÚÜ
+NÈ	
+	Ø˜XÚÕÕ[T^TÚÜ	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÈXÝ]™QØ[YTÚÜH[ÈØ[YTÚÜØ]YÛÜžHH	Ø[	ÎÈ™[™\”ÚÜ
+
+NÈJNÈ	
+	ÜÚÜÛÛXÝ[Û]Û‰ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË
+
+HOˆÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ØÛÛXÝ[Û—ÛÜ[™Y	Ë[ÈÛÝ\˜ÙNˆ	ÜÚÜÜÝ[[X\žIÈJJNÈ	
+	ÜÚÜØ[YS[šÜÉÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝ]ÛˆH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]KYØ[YK\ÚÜIÊNÈYˆ
+X]ÛŠH™]\›ŽÈXÝ]™QØ[YTÚÜH]Û‹™]\Ù]™Ø[YTÚÜÈØ[YTÚÜØ]YÛÜžHH	Ø[	ÎÈ™[™\”ÚÜ
+
+NÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	ÙØ[YWÜÚÜÛÜ[™Y	ËXÝ]™QØ[YTÚÜÈÛÝ\˜ÙNˆ	Ý[\^WÜÚÜ	ÈJNÈJNÈ	
+	ÜÚÜXœÉÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝXˆH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\ÚÜXØ]YÛÜžWIÊNÈYˆ
+XŠHÈYˆ
+XÝ]™QØ[YTÚÜ
+HØ[YTÚÜØ]YÛÜžHHX‹™]\Ù]œÚÜØ]YÛÜžNÈ[ÙHÚÜØ]YÛÜžHHX‹™]\Ù]œÚÜØ]YÛÜžNÈ™[™\”ÚÜ
+
+NÈHJNÈ	
+	ÜÚÜÜšY	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝØ\™H]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\ÚÜZ][WIÊNÈYˆ
+XØ\™
+H™]\›ŽÈÛÛœÝYHØ\™™]\Ù]œÚÜ][KXÝ[ÛˆH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\ÚÜXXÝ[Û—IÊOË™]\Ù]œÚÜXÝ[Û‹ÚÜHXÝ]™QØ[YTÚÜÈÚ[™ÝË•[T^QØ[YTÚÜÏË–ØXÝ]™QØ[YTÚÜHˆ[ÈYˆ
+XXÝ[ÛŠHÈÛÛœÝ][HHÚÜÈÚÜš][JY
+HˆÚ[™ÝË•[T^TÚÜËš][OËŠY
+KšXÙHHšXÙR[™›Ê][JNÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ú][WÝšY]ÙY	Ë][OË™Ø[YRY
+XÝ]™QØ[YTÚÜ[
+KÈ][RYˆYØ]YÛÜžNˆ][OË˜Ø]YÛÜžKÝ\œ™[˜ÞU\NˆšXÙK˜Ý\œ™[˜ÞHJNÈYˆ
+šXÙK˜Ý\œ™[˜ÞHOOH	ÙÙ[\ÉÊHÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ü™[Z][WÚ][WÝšY]ÙY	Ë][OË™Ø[YRY
+XÝ]™QØ[YTÚÜ[
+KÈ][RYˆYØ]YÛÜžNˆ][OË˜Ø]YÛÜžHJNÈ™]\›ŽÈHÛÛœÝ][HHÚÜÈÚÜš][JY
+HˆÚ[™ÝË•[T^TÚÜËš][OËŠY
+NÈÛÛœÝ™\Ý[HXÝ[ÛˆOOH	Ø^IÈÈ
+ÚÜÈÚÜ˜^R][JY
+HˆÚ[™ÝË•[T^TÚÜË˜^OËŠY
+JHˆXÝ[ÛˆOOH	Ù\]Z\	ÈÈ
+ÚÜÈÚÜ™\]Z\][JY
+HˆÚ[™ÝË•[T^TÚÜË™\]Z\ËŠY
+JHˆ
+ÚÜÈÚÜ[™\]Z\][J][OËœÛÝ
+HˆÚ[™ÝË•[T^TÚÜË[™\]Z\ËŠ][OËœÛÝ
+JNÈYˆ
+\™\Ý[Ë›ÚÊHÈYˆ
+™\Ý[Ëœ™X\ÛÛˆOOH	Ú[œÝY™šXÚY[ØÛÚ[œÉÈ™\Ý[Ëœ™X\ÛÛˆOOH	Ú[œÝY™šXÚY[ÙÙ[\ÉÊHÚ[™ÝË•[T^PÛÜ™OË’\XÓX[˜YÙ\Ë››ÝYšXØ][ÛËŠ	ÝØ\›š[™ÉÊNÈ™]\›ŽÈHÚ[™ÝË•[T^PÛÜ™OË’\XÓX[˜YÙ\Ëš[\XÝËŠXÝ[ÛˆOOH	Ø^IÈÈ	ÛYY][IÈˆ	ÛYÚ	ÊNÈ™[™\”ÚÜ
+
+NÈ\]PØ][ÙÔÝ]Ê
+NÈ›\ÚÚÜØ\™
+YXÝ[ÛˆOOH	Ø^IÈÈ	Ü\˜Ú\ÙIÈˆ	Ù\]Z\	ÊNÈJNÈ	
+	ØÛÜÙT›Ùš[IÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÛÜÙT›Ùš[JNÈ	
+	Ü›Ùš[PÚ[[™Ù\Ð]Û‰ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÜ[Ú[[™Ù\ÊNÈ	
+	ØÛÜÙPÚ[[™Ù\ÉÊK˜Y]™[\Ý[™\Š	ØÛXÚÉËÛÜÙPÚ[[™Ù\ÊNÈ	
+	Ü›Ùš[TØÜ™Y[‰ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝ]ÛˆH]™[\™Ù]˜ÛÜÙ\Ý
+	Ëœ›Ùš[K\ÙXÝ[Û‹]ÙÙÛIÊNÈYˆ
+]ÛŠHÙ]›Ùš[T[™[
+]Û‹]Û‹™Ù]]šX]J	Ø\šXKY^[™Y	ÊHOOH	ÝYIÊNÈJNÈ	
+	Ù˜]›Üš]QØ[Y\Ó\Ý	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝ›ÝÈH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\›Ùš[KYØ[YWIÊNÈYˆ
+›ÝÊH˜]šYØ]QØ[YJ›ÝË™]\Ù]œ›Ùš[QØ[YJNÈJNÈ	
+	Ü›Ùš[T™XÛÜ™Ó\Ý	ÊK˜Y]™[\Ý[™\Š	ØÛXÚÉË]™[OˆÈÛÛœÝ›ÝÈH]™[\™Ù]˜ÛÜÙ\Ý
+	ÖÙ]K\›Ùš[KYØ[YWIÊNÈYˆ
+›ÝÊH˜]šYØ]QØ[YJ›ÝË™]\Ù]œ›Ùš[QØ[YJNÈJNÂˆÚ[™ÝË•[T^PYZ[”[™[ËœÙ]ÛÜÙR[™\ËŠÛÜÙPYZ[ŠNÈÚ[™ÝË•[T^PYZ[”[™[Ë›[Ý[][˜Ú\ËŠ	
+	ØYZ[XÝ[Û”ÛÝ	ÊK˜]šYØ]PYZ[ŠNÂˆÏË˜XÚÐ]ÛË›ÛÛXÚÊ
+
+HOˆÈÛÛœÝØ\˜YÙQØ[YHHØ[Y\Ë™š[™
+Ø[YHOˆÚ[™ÝÖÙØ[YK˜ÛÛ\Û™[OËš\ÑØ\˜YÙSÜ[ËŠ
+JNÈYˆ
+Ø\˜YÙQØ[YJHÚ[™ÝÖÙØ\˜YÙQØ[YK˜ÛÛ\Û™[K˜ÛÜÙQØ\˜YÙJ
+NÈ[ÙHYˆ
+YZ[“Ü[ŠHÛÜÙPYZ[Š
+NÈ[ÙHYˆ
+ÚÜÜ[ˆ	‰ˆXÝ]™QØ[YTÚÜ
+HÈXÝ]™QØ[YTÚÜH[ÈØ[YTÚÜØ]YÛÜžHH	Ø[	ÎÈ™[™\”ÚÜ
+
+NÈH[ÙHYˆ
+ÚÜÜ[ŠHÛÜÙTÚÜ
+
+NÈ[ÙHYˆ
+Ú[[™Ù\ÓÜ[ŠHÛÜÙPÚ[[™Ù\Ê
+NÈ[ÙHYˆ
+›Ùš[SÜ[ŠHÛÜÙT›Ùš[J
+NÈ[ÙHYˆ
+Xœ˜\žSÜ[ŠHÙ]ÛYUšY]Ê	ÚÛYIÊNÈ[ÙH˜XÚÕÐØ][ÙÊ
+NÈJNÈÚ[™ÝË˜Y]™[\Ý[™\Š	ÜÜÝ]IË™[™\”›Ý]JNÈÚ[™ÝË˜Y]™[\Ý[™\Š	Ú\ÚÚ[™ÙIË™[™\”›Ý]JNÈÚ[™ÝË˜Y]™[\Ý[™\Š	ÜÝÜ˜YÙIË\]PØ][ÙÔÝ]ÊNÂˆÛÛœÝØ]ÚY]™[ÈHÉÙØ[YWÜÝ\Y	Ë	ÙØ[YWÙš[š\ÚY	Ë	Û™]×Ü™XÛÜ™	Ë	Û]™[Ý\	Ë	Ü˜[š×ØÚ[™ÙY	Ë	ÛX\Ý\žWÝ\	Ë	ÞÜ™XÙZ]™Y	Ë	ØXÚY]™[Y[Ý[›ØÚÙY	Ë	Ý]WÝ[›ØÚÙY	Ë	ØÛÚ[œ×ÙX\›™Y	Ë	ØÛÚ[œ×ÜÜ[	Ë	ÙÙ[\×Ü™XÙZ]™Y	Ë	ÙÙ[\×ÜÜ[	Ë	Ü™[Z][WÚ][WÜ\˜Ú\ÙY	Ë	Ü›Ùš[WÝ\]Y	Ë	ØÚ[[™ÙWØÛÛ\]Y	Ë	ÝÙYZÛWØÛÛ\]Y	Ë	ÜÝ™XZ×Ù^[™Y	Ë	ÜÝ™XZ×ÛÜÝ	Ë	ØYZ[—Ü[™[ÛÜ[™Y	×NÂˆØ]ÚY]™[Ë™›Ü‘XXÚ
+]™[OˆÚ[™ÝË˜Y]™[\Ý[™\Š[\^N‰Ù]™[X
+
+HOˆÈ\]PØ][ÙÔÝ]Ê
+NÈÚ[™ÝË•[T^PYZ[”[™[Ëœ™Yœ™\ÚËŠ
+NÈJJNÂˆÚ[™ÝË˜Y]™[\Ý[™\Š	Ý[\^N™]K\Ý]\ÉË]™[Oˆ™[™\‘]TÝ]\Ê]™[™]Z[
+JNÂˆ	
+	Ù]TÝ]\Ô™]žIÊOË˜Y]™[\Ý[™\Š	ØÛXÚÉË\Þ[˜È]™[OˆÈÛÛœÝ]ÛˆH]™[˜Ý\œ™[\™Ù]È]Û‹™\ØX›YHYNÈ]ØZ]]T›ÝšY\Š
+OËœ™]žOËŠ
+NÈ^Y\Š
+OËš[š]X[^™OËŠ
+NÈ\]PØ][ÙÔÝ]Ê
+NÈÚ[™ÝË•[T^PYZ[”[™[Ëœ™Yœ™\ÚËŠ
+NÈ™[™\‘]TÝ]\Ê]T›ÝšY\Š
+OËœÝ]\ÏËŠ
+JNÈ]Û‹™\ØX›YH˜[ÙNÈJNÂˆ\Þ[˜È[˜Ý[Ûˆ›ÛÝÝ˜\
+
+HÂˆÛÛœÝÛÛ›™XÝ[ÛˆH]ØZ]]T›ÝšY\Š
+OËš[š]X[^™OËŠ
+NÂˆ	
+	Ü›Ùš[SØY[™ÉÊOË˜Û\ÜÓ\Ý˜Y
+	Ú\Ë\™XYIÊNÂˆ^Y\Š
+OËš[š]X[^™OËŠ
+NÈÚ[™ÝË•[T^PÚ[[™Ù\ÏËš[š]X[^™OËŠ
+NÈÙ]Ø]YÛÜžJ	Ø[	ÊNÈ\]PØ][ÙÔÝ]Ê
+NÈÚ[™ÝË•[T^PYZ[”[™[Ë›[Ý[][˜Ú\ËŠ	
+	ØYZ[XÝ[Û”ÛÝ	ÊK˜]šYØ]PYZ[ŠNÈ™[™\‘]TÝ]\Ê]T›ÝšY\Š
+OËœÝ]\ÏËŠ
+JNÈ™[™\”›Ý]J
+NÂˆÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜\Ü[™YËŠÈÛÛ›™XÝ[ÛŽˆÛÛ›™XÝ[ÛËœÝ]\È	Ý[šÛ›ÝÛ‰Ë]˜Z[X›QØ[Y\Îˆ]˜Z[X›QØ[Y\Ê
+K›[™ÝJNÂˆÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜\™XYOËŠÈÛÛ›™XÝ[ÛŽˆÛÛ›™XÝ[ÛËœÝ]\È	Ý[šÛ›ÝÛ‰Ë]S[ÙNˆ]T›ÝšY\Š
+OËœÝ]\ÏËŠ
+OË˜XÝ]™S[ÙH	ÛØØ[	ÈJNÂˆÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜Ø][ÙÕšY]ÙYËŠÈ]˜Z[X›QØ[Y\Îˆ]˜Z[X›QØ[Y\Ê
+K›[™ÝØ][ÙÑØ[Y\ÎˆØ[Y\Ë›[™ÝJNÂˆBˆ›ÛÝÝ˜\
+
+K˜Ø]Ú
+
+
+HOˆÈ	
+	Ü›Ùš[SØY[™ÉÊOË˜Û\ÜÓ\Ý˜Y
+	Ú\Ë\™XYIÊNÈ^Y\Š
+OËš[š]X[^™OËŠ
+NÈÚ[™ÝË•[T^PÚ[[™Ù\ÏËš[š]X[^™OËŠ
+NÈÙ]Ø]YÛÜžJ	Ø[	ÊNÈ\]PØ][ÙÔÝ]Ê
+NÈ™[™\‘]TÝ]\Ê]T›ÝšY\Š
+OËœÝ]\ÏËŠ
+JNÈ™[™\”›Ý]J
+NÈÚ[™ÝË•[T^PÛÜ™OË[˜[]XÜÏË˜XÚÏËŠ	Ø\Ø›ÛÝÝ˜\Ù˜Z[Y	Ë[ÈÛÛ›™XÝ[ÛŽˆ]T›ÝšY\Š
+OËœÝ]\ÏËŠ
+OËœ\ÙH	Ý[šÛ›ÝÛ‰ÈJNÈJNÂŸJJ
+NÂ

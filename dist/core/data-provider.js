@@ -1,367 +1,7 @@
-(() => {
-  const core = () => window.TelePlayCore || {};
-  const config = () => window.TelePlayDataConfig || { mode: 'local', backendUrl: '', endpoints: {} };
-  const model = () => window.TelePlayDataModel || { toRecord: value => value, fromRecord: value => value };
-  const clone = value => { try { return JSON.parse(JSON.stringify(value ?? {})); } catch (_) { return {}; } };
-  const id = prefix => `${prefix}:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`;
-  const queryString = params => {
-    const query = new URLSearchParams();
-    Object.entries(params || {}).forEach(([key, value]) => { if (value != null && value !== '') query.set(key, String(value)); });
-    const result = query.toString(); return result ? `?${result}` : '';
-  };
-  const currentId = () => String(core().PlayerData?.get?.().profile?.id || core().TelegramAuth?.identity?.().telegramId || 'guest');
-  const hasMeaningfulLocalData = snapshot => {
-    const state = snapshot || {}, stats = state.statistics || {}, inventory = state.inventory || {};
-    const ownedProfile = inventory.profile?.ownedItems || inventory.ownedItems || [];
-    const ownedGames = Object.values(inventory.games || {}).some(scope => (scope?.ownedItems || []).length > 0);
-    return Number(state.coins || 0) > 0 || Number(state.gems || state.teleGems || 0) > 0 || Number(state.progress?.totalXP || state.progress?.xp || 0) > 0 || Number(stats.totalGames || stats.gamesPlayed || 0) > 0 || Object.keys(state.records || {}).length > 0 || (state.achievements?.unlockedAchievements || []).length > 0 || ownedProfile.some(item => item !== 'avatar-frame-neon') || ownedGames;
-  };
-  const migrationSummary = snapshot => ({
-    coins: Math.max(0, Number(snapshot?.coins || 0)),
-    gems: Math.max(0, Number(snapshot?.gems || snapshot?.teleGems || 0)),
-    level: Math.max(1, Number(snapshot?.progress?.level || 1)),
-    totalXP: Math.max(0, Number(snapshot?.progress?.totalXP || snapshot?.progress?.xp || 0)),
-    items: (snapshot?.inventory?.profile?.ownedItems || []).length + Object.values(snapshot?.inventory?.games || {}).reduce((sum, scope) => sum + (scope?.ownedItems || []).length, 0),
-    achievements: (snapshot?.achievements?.unlockedAchievements || []).length
-  });
-
-  class ProviderError extends Error {
-    constructor(code, { status = 0, userMessage = '', retryable = false, cause = null } = {}) {
-      super(code); this.name = 'ProviderError'; this.code = code; this.status = status; this.userMessage = userMessage; this.retryable = retryable; this.cause = cause;
-    }
-  }
-  const friendlyError = error => {
-    const code = error?.code || error?.message || 'backend_error';
-    if (['telegram_auth_required', 'telegram_auth_invalid', 'telegram_auth_expired', 'backend_http_401'].includes(code)) return 'ÐžÑ‚ÐºÑ€Ð¾Ð¹ TelePlay Ñ‡ÐµÑ€ÐµÐ· Telegram, Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ.';
-    if (code === 'backend_url_missing') return 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦';
-    if (['backend_timeout', 'backend_unavailable', 'health_check_failed'].includes(code)) return 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦';
-    if (code === 'sync_failed') return 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑÑ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦';
-    return 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦';
-  };
-
-  class LocalStorageProvider {
-    constructor() { this.kind = 'local'; }
-    getCurrentPlayerSync() { return core().SaveManager?.read?.() || {}; }
-    savePlayer(snapshot) { return core().SaveManager?.write?.(snapshot) || snapshot; }
-    syncCurrentPlayer() { return Promise.resolve(this.getCurrentPlayerSync()); }
-    normalizeRecord(value) { return model().toRecord(value); }
-    localPlayerRows() { return [this.normalizeRecord(this.getCurrentPlayerSync())]; }
-    listPlayers(options = {}) { return Promise.resolve(this.filterPlayers(this.localPlayerRows(), options)); }
-    filterPlayers(rows, options = {}) {
-      const query = String(options.query || '').trim().toLowerCase().replace(/^@/, ''), filters = options.filters || {};
-      return rows.filter(player => {
-        const matchesQuery = !query || String(player.telegramId || '').toLowerCase().includes(query) || String(player.username || '').toLowerCase().includes(query);
-        const created = player.createdAt ? new Date(player.createdAt).toISOString().slice(0, 10) : '', active = player.lastActive ? new Date(player.lastActive).toISOString().slice(0, 10) : '', today = new Date().toISOString().slice(0, 10);
-        if ((filters.newPlayers || options.filter === 'new') && created !== today) return false;
-        if ((filters.activeToday || options.filter === 'active') && active !== today) return false;
-        return matchesQuery;
-      });
-    }
-    getPlayer(playerId) { return Promise.resolve(this.localPlayerRows().find(player => String(player.telegramId) === String(playerId)) || null); }
-    normalizeTransaction(item) { return { ...clone(item), playerId: item.playerId || currentId(), currency: item.currency || item.currencyType || 'coins', amount: Number(item.amount || 0) }; }
-    getTransactions(options = {}) { const history = this.getCurrentPlayerSync().currencyTransactions || []; return Promise.resolve(history.map(item => this.normalizeTransaction(item)).filter(item => !options.playerId || String(item.playerId) === String(options.playerId))); }
-    getAnalyticsEventsSync() { return [...(this.getCurrentPlayerSync().analyticsEvents || [])].map(item => ({ ...clone(item), playerId: item.playerId || currentId(), timestamp: item.timestamp || item.createdAt })); }
-    getAdminActionsSync() { return [...(this.getCurrentPlayerSync().adminActionLog || [])].map(item => ({ ...clone(item), targetPlayer: item.targetPlayer || currentId() })); }
-    getRewardProofs() { return Promise.resolve([]); }
-    getGameResults() { return Promise.resolve([]); }
-    getFraudEvents() { return Promise.resolve([]); }
-    getAnalyticsEvents() { return Promise.resolve(this.getAnalyticsEventsSync()); }
-    getAdminActions() { return Promise.resolve(this.getAdminActionsSync()); }
-    append(key, entry) { const save = this.getCurrentPlayerSync(), history = Array.isArray(save[key]) ? save[key] : []; this.savePlayer({ ...save, [key]: [...history, entry].slice(-300) }); return entry; }
-    recordAnalyticsEvent(entry) { return this.append('analyticsEvents', { id: entry.id || id('event'), playerId: entry.playerId || currentId(), event: String(entry.event || 'unknown'), timestamp: entry.timestamp || Date.now(), metadata: clone(entry.metadata || entry.params || {}) }); }
-    recordAdminAction(entry) { return this.append('adminActionLog', { id: entry.id || id('admin'), ...clone(entry), targetPlayer: entry.targetPlayer || currentId(), timestamp: entry.timestamp || Date.now() }); }
-    postAdminAction(entry) { return Promise.resolve(this.recordAdminAction(entry)); }
-    postAnalyticsEvent(entry) { return Promise.resolve(this.recordAnalyticsEvent(entry)); }
-  }
-
-  let activeProvider, state;
-  const notifyState = patch => {
-    state = { ...state, ...patch, updatedAt: Date.now() };
-    try { window.dispatchEvent(new CustomEvent('teleplay:data-status', { detail: clone(state) })); } catch (_) {}
-    return state;
-  };
-
-  class BackendProvider {
-    constructor(local) { this.kind = 'backend'; this.local = local; this.syncTimer = null; this.currencyQueue = Promise.resolve(); this.active = false; this.initialLocalSnapshot = clone(local.getCurrentPlayerSync()); }
-    getCurrentPlayerSync() { return this.local.getCurrentPlayerSync(); }
-    savePlayer(snapshot) {
-      const saved = this.local.savePlayer({ ...snapshot, serverSync: { ...(snapshot.serverSync || {}), pending: this.active, updatedAt: Date.now() } });
-      if (this.active) this.queueStateSync(saved);
-      return saved;
-    }
-    async request(path, options = {}) {
-      const base = config().backendUrl;
-      if (!base) throw new ProviderError('backend_url_missing', { userMessage: friendlyError({ code: 'backend_url_missing' }) });
-      if (typeof fetch !== 'function') throw new ProviderError('backend_unavailable', { retryable: true, userMessage: friendlyError({ code: 'backend_unavailable' }) });
-      const requiresAuth = options.requiresAuth !== false, auth = core().TelegramAuth;
-      if (requiresAuth && !auth?.initData?.()) throw new ProviderError('telegram_auth_required', { status: 401, userMessage: friendlyError({ code: 'telegram_auth_required' }) });
-      const controller = typeof AbortController === 'function' ? new AbortController() : null;
-      const timeoutMs = Number(options.timeoutMs || config().requestTimeoutMs || 8000), timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
-      const headers = requiresAuth ? (auth?.headers?.({ 'Content-Type': 'application/json' }) || {}) : { Accept: 'application/json', 'Content-Type': 'application/json' };
-      try {
-        const response = await fetch(`${base}${path}`, { ...options, signal: controller?.signal, headers: { ...headers, ...(options.headers || {}) } });
-        let payload = null; try { payload = response.status === 204 ? null : await response.json(); } catch (_) {}
-        if (!response.ok) {
-          const code = payload?.error || `backend_http_${response.status}`;
-          throw new ProviderError(code, { status: response.status, retryable: response.status >= 500, userMessage: friendlyError({ code }) });
-        }
-        return payload;
-      } catch (error) {
-        if (error instanceof ProviderError) throw error;
-        const timeout = error?.name === 'AbortError';
-        throw new ProviderError(timeout ? 'backend_timeout' : 'backend_unavailable', { retryable: true, cause: error, userMessage: friendlyError({ code: timeout ? 'backend_timeout' : 'backend_unavailable' }) });
-      } finally { if (timer) clearTimeout(timer); }
-    }
-    async healthCheck() {
-      const payload = await this.request(config().endpoints.health || '/health', { method: 'GET', requiresAuth: false, timeoutMs: config().healthTimeoutMs });
-      if (!(payload?.status === 'ok' || payload?.ok === true)) throw new ProviderError('health_check_failed', { retryable: true, userMessage: friendlyError({ code: 'health_check_failed' }) });
-      return payload;
-    }
-    hydrate(record, current = this.getCurrentPlayerSync()) {
-      const next = model().fromRecord(record, current);
-      return this.local.savePlayer({ ...next, serverSync: { pending: false, syncedAt: Date.now() } });
-    }
-    transactionBody(entry) { return { id: entry.id, currencyType: entry.currencyType || entry.currency || 'coins', type: entry.type === 'spend' ? 'spend' : 'earn', amount: Math.abs(Number(entry.amount || 0)), source: entry.source || 'system', metadata: entry.metadata || {} }; }
-    queueOfflineTransaction(entry) {
-      const body = this.transactionBody(entry), current = this.local.getCurrentPlayerSync(), pendingTransactions = [...(current.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id), body];
-      this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingTransactions, pending: true, updatedAt: Date.now() } });
-      return null;
-    }
-    queueOfflineAnalytics(entry, recordLocal = true) {
-      const saved = recordLocal ? this.local.recordAnalyticsEvent(entry) : entry, current = this.local.getCurrentPlayerSync(), value = { ...clone(entry), id: entry.id || saved?.id || id('event'), timestamp: entry.timestamp || entry.createdAt || Date.now() }, pendingAnalytics = [...(current.serverSync?.pendingAnalytics || []).filter(item => item.id !== value.id), value];
-      this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingAnalytics, pending: true, updatedAt: Date.now() } });
-      return value;
-    }
-    queueOfflineSession(entry) {
-      const current = this.local.getCurrentPlayerSync(), value = clone(entry), key = `${value.id}:${value.finishedAt ? 'finish' : 'start'}`, pendingSessions = [...(current.serverSync?.pendingSessions || []).filter(item => `${item.id}:${item.finishedAt ? 'finish' : 'start'}` !== key), value];
-      this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingSessions, pending: true, updatedAt: Date.now() } });
-      return null;
-    }
-    permanentTransactionError(error) {
-      return ['server_reward_required', 'invalid_shop_item', 'invalid_shop_price', 'invalid_shop_source', 'free_item', 'item_already_owned', 'insufficient_balance', 'invalid_amount', 'invalid_transaction_source', 'invalid_transaction_type'].includes(error?.code);
-    }
-    async replayPendingWrites() {
-      const current = this.local.getCurrentPlayerSync(), pending = Array.isArray(current?.serverSync?.pendingTransactions) ? current.serverSync.pendingTransactions : [];
-      for (const body of pending) {
-        let payload;
-        try {
-          payload = await this.request(config().endpoints.transactions, { method: 'POST', headers: { 'X-Idempotency-Key': String(body.id || '') }, body: JSON.stringify(body) });
-        } catch (error) {
-          if (!this.permanentTransactionError(error)) throw error;
-          const latest = this.local.getCurrentPlayerSync(), remaining = (latest.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id);
-          this.local.savePlayer({ ...latest, serverSync: { ...(latest.serverSync || {}), pendingTransactions: remaining, pending: remaining.length > 0 || (latest.serverSync?.pendingAnalytics || []).length > 0 || (latest.serverSync?.pendingSessions || []).length > 0, syncedAt: Date.now(), lastRejectedTransaction: error.code } });
-          continue;
-        }
-        const latest = this.local.getCurrentPlayerSync(), remaining = (latest.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id), currency = body.currencyType === 'gems' ? 'gems' : 'coins';
-        this.local.savePlayer({ ...latest, ...(payload?.balance != null ? { [currency]: Number(payload.balance) } : {}), serverSync: { ...(latest.serverSync || {}), pendingTransactions: remaining, pending: remaining.length > 0 || (latest.serverSync?.pendingAnalytics || []).length > 0 || (latest.serverSync?.pendingSessions || []).length > 0, syncedAt: Date.now() } });
-      }
-      const analytics = [...(this.local.getCurrentPlayerSync().serverSync?.pendingAnalytics || [])];
-      for (const entry of analytics) {
-        await this.request(config().endpoints.analytics, { method: 'POST', headers: { 'X-Idempotency-Key': String(entry.id || '') }, body: JSON.stringify({ ...entry, playerId: undefined }) });
-        const latest = this.local.getCurrentPlayerSync(), pendingAnalytics = (latest.serverSync?.pendingAnalytics || []).filter(item => item.id !== entry.id);
-        this.local.savePlayer({ ...latest, serverSync: { ...(latest.serverSync || {}), pendingAnalytics, pending: pendingAnalytics.length > 0 || (latest.serverSync?.pendingTransactions || []).length > 0 || (latest.serverSync?.pendingSessions || []).length > 0, syncedAt: Date.now() } });
-      }
-      const sessions = [...(this.local.getCurrentPlayerSync().serverSync?.pendingSessions || [])];
-      for (const entry of sessions) {
-        await this.request(config().endpoints.gameSessions || '/game-sessions', { method: 'POST', headers: { 'X-Idempotency-Key': String(entry.id || '') }, body: JSON.stringify({ ...entry, playerId: undefined }) });
-        const latest = this.local.getCurrentPlayerSync(), key = `${entry.id}:${entry.finishedAt ? 'finish' : 'start'}`, pendingSessions = (latest.serverSync?.pendingSessions || []).filter(item => `${item.id}:${item.finishedAt ? 'finish' : 'start'}` !== key);
-        this.local.savePlayer({ ...latest, serverSync: { ...(latest.serverSync || {}), pendingSessions, pending: pendingSessions.length > 0 || (latest.serverSync?.pendingTransactions || []).length > 0 || (latest.serverSync?.pendingAnalytics || []).length > 0, syncedAt: Date.now() } });
-      }
-      const results = [...(this.local.getCurrentPlayerSync().serverSync?.pendingGameResults || [])];
-      for (const entry of results) {
-        const payload = await this.submitGameResult(entry);
-        if (!payload) continue;
-        const latest = this.local.getCurrentPlayerSync(), pendingGameResults = (latest.serverSync?.pendingGameResults || []).filter(item => item.sessionId !== entry.sessionId);
-        this.local.savePlayer({ ...latest, serverSync: { ...(latest.serverSync || {}), pendingGameResults, pending: pendingGameResults.length > 0 || (latest.serverSync?.pendingTransactions || []).length > 0 || (latest.serverSync?.pendingAnalytics || []).length > 0 || (latest.serverSync?.pendingSessions || []).length > 0, syncedAt: Date.now() } });
-      }
-    }
-    async pullCurrentPlayer() { const payload = await this.request(config().endpoints.me, { method: 'GET' }); return payload?.player || null; }
-    async createCurrentPlayer() {
-      const payload = await this.request(config().endpoints.me, { method: 'POST', body: '{}' });
-      if (!payload?.player) throw new ProviderError('player_create_failed', { userMessage: friendlyError({ code: 'backend_error' }) });
-      this.active = true; return this.hydrate(payload.player, this.getCurrentPlayerSync());
-    }
-    async importLocalPlayer(snapshot = this.initialLocalSnapshot) {
-      const payload = await this.request(config().endpoints.meImport || '/players/me/import', { method: 'POST', body: JSON.stringify({ migrationId: id('local-migration'), migrationVersion: 'local-v1', snapshot: model().toRecord(snapshot) }) });
-      if (!payload?.player) throw new ProviderError('player_import_failed', { userMessage: 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ. ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€ÑÐµÐ¼ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµâ€¦', retryable: true });
-      this.active = true; return { snapshot: this.hydrate(payload.player, snapshot), imported: Boolean(payload.imported) };
-    }
-    async pushState(snapshot = this.getCurrentPlayerSync()) {
-      if (!this.active) return null;
-      try {
-        // Purchases update the local inventory synchronously. Ensure their
-        // authoritative currency transaction reaches the server first, so
-        // inventory verification can see the matching itemId.
-        await this.currencyQueue;
-        await this.replayPendingWrites();
-        const payload = await this.request(config().endpoints.meState || '/players/me/state', { method: 'PUT', headers: { 'X-Idempotency-Key': id('sync') }, body: JSON.stringify(model().toRecord(snapshot)) });
-        const saved = payload?.player ? this.hydrate(payload.player, snapshot) : this.local.savePlayer({ ...snapshot, serverSync: { pending: false, syncedAt: Date.now() } });
-        notifyState({ phase: 'online', activeMode: 'backend', healthy: true, fallback: false, message: '', lastError: null });
-        return saved;
-      } catch (error) {
-        this.local.savePlayer({ ...snapshot, serverSync: { pending: true, updatedAt: Date.now(), error: error.code || 'sync_failed' } });
-        notifyState({ phase: 'degraded', activeMode: 'backend', healthy: false, fallback: true, message: friendlyError({ code: 'sync_failed' }), lastError: error.code || 'sync_failed' });
-        return null;
-      }
-    }
-    queueStateSync(snapshot) { clearTimeout(this.syncTimer); this.syncTimer = setTimeout(() => { this.pushState(snapshot).catch(() => {}); }, Number(config().syncDebounceMs || 350)); }
-    async initialize() {
-      await this.healthCheck();
-      const identity = core().TelegramAuth?.identity?.() || {};
-      if (!identity.authenticated || !identity.telegramId) throw new ProviderError('telegram_auth_required', { status: 401, userMessage: friendlyError({ code: 'telegram_auth_required' }) });
-      try {
-        const remote = await this.pullCurrentPlayer();
-        this.active = true;
-        if (this.getCurrentPlayerSync()?.serverSync?.pending) return { status: 'online', snapshot: await this.pushState(this.getCurrentPlayerSync()), restoredPending: true };
-        if (hasMeaningfulLocalData(this.initialLocalSnapshot)) {
-          const migrated = await this.importLocalPlayer(this.initialLocalSnapshot);
-          return { status: 'online', snapshot: migrated.snapshot, migrated: migrated.imported };
-        }
-        return { status: 'online', snapshot: this.hydrate(remote, this.getCurrentPlayerSync()) };
-      } catch (error) {
-        if (error.status !== 404 && error.code !== 'player_not_found') throw error;
-        const created = await this.createCurrentPlayer();
-        if (hasMeaningfulLocalData(this.initialLocalSnapshot)) {
-          const migrated = await this.importLocalPlayer(this.initialLocalSnapshot);
-          return { status: 'online', snapshot: migrated.snapshot, created: true, migrated: migrated.imported };
-        }
-        return { status: 'online', snapshot: created, created: true, migrated: false };
-      }
-    }
-    async syncCurrentPlayer() { const remote = await this.pullCurrentPlayer(); this.active = true; return this.hydrate(remote, this.getCurrentPlayerSync()); }
-    async remoteOrFallback(action, fallback, options = {}) { if (!this.active && !options.strict) return fallback(); try { return await action(); } catch (error) { if (options.strict) throw error; return fallback(); } }
-    listPlayers(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.players}${queryString({ q: options.query, sort: options.sort, filter: options.filter })}`, { method: 'GET' }); return (Array.isArray(payload) ? payload : payload?.players || []).map(value => model().toRecord(model().fromRecord(value, {}))); }, () => this.local.listPlayers(options), options); }
-    getPlayer(playerId, options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.players}/${encodeURIComponent(playerId)}`, { method: 'GET' }); return payload?.player || payload || null; }, () => this.local.getPlayer(playerId), options); }
-    getTransactions(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.transactions}${queryString({ playerId: options.playerId })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.transactions || []; }, () => this.local.getTransactions(options), options); }
-    getAnalyticsEvents(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.analytics}${queryString({ playerId: options.playerId })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.events || []; }, () => this.local.getAnalyticsEvents(options), options); }
-    getAdminActions(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.adminActions}${queryString({ playerId: options.playerId })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.actions || []; }, () => this.local.getAdminActions(options), options); }
-    getRewardProofs(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.rewardProofs || '/reward-proofs'}${queryString({ playerId: options.playerId, status: options.status })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.proofs || []; }, () => [], options); }
-    getGameResults(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.gameResultsAdmin || '/game-results'}${queryString({ playerId: options.playerId, validated: options.validated })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.results || []; }, () => [], options); }
-    getFraudEvents(options = {}) { return this.remoteOrFallback(async () => { const payload = await this.request(`${config().endpoints.fraudEvents || '/fraud-events'}${queryString({ playerId: options.playerId })}`, { method: 'GET' }); return Array.isArray(payload) ? payload : payload?.events || []; }, () => [], options); }
-    getPaymentPackages() { return this.request(config().endpoints.paymentPackages || '/payments/packages', { method: 'GET' }).then(payload => Array.isArray(payload) ? payload : payload?.packages || []); }
-    createPaymentInvoice(packageId, idempotencyKey) { return this.request(config().endpoints.paymentInvoice || '/payments/invoice', { method: 'POST', headers: { 'X-Idempotency-Key': String(idempotencyKey || '') }, body: JSON.stringify({ packageId }) }); }
-    getPayments(options = {}) { return this.request(`${config().endpoints.payments || '/payments'}${queryString({ playerId: options.playerId, status: options.status })}`, { method: 'GET' }).then(payload => Array.isArray(payload) ? payload : payload?.payments || []); }
-    getMyPayments() { return this.request(config().endpoints.myPayments || '/payments/me', { method: 'GET' }).then(payload => Array.isArray(payload) ? payload : payload?.payments || []); }
-    recordTransaction(entry) {
-      if (!this.active) return Promise.resolve(null);
-      const body = this.transactionBody(entry);
-      const send = async () => {
-        try {
-          const payload = await this.request(config().endpoints.transactions, { method: 'POST', headers: { 'X-Idempotency-Key': String(body.id || '') }, body: JSON.stringify(body) });
-          if (payload?.balance != null) { const current = this.local.getCurrentPlayerSync(), currency = body.currencyType === 'gems' ? 'gems' : 'coins', pendingTransactions = (current.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id); this.local.savePlayer({ ...current, [currency]: Number(payload.balance), serverSync: { ...(current.serverSync || {}), pendingTransactions, pending: pendingTransactions.length > 0, syncedAt: Date.now() } }); }
-          return payload;
-        } catch (error) {
-          const current = this.local.getCurrentPlayerSync();
-          if (this.permanentTransactionError(error)) {
-            const pendingTransactions = (current.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id);
-            this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingTransactions, pending: pendingTransactions.length > 0 || (current.serverSync?.pendingAnalytics || []).length > 0 || (current.serverSync?.pendingSessions || []).length > 0, syncedAt: Date.now(), lastRejectedTransaction: error.code } });
-            return null;
-          }
-          const pendingTransactions = [...(current.serverSync?.pendingTransactions || []).filter(item => item.id !== body.id), body];
-          this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingTransactions, pending: true, updatedAt: Date.now(), error: error.code || 'sync_failed' } });
-          notifyState({ phase: 'degraded', healthy: false, fallback: true, message: friendlyError({ code: 'sync_failed' }), lastError: error.code });
-          return null;
-        }
-      };
-      this.currencyQueue = this.currencyQueue.then(send, send);
-      return this.currencyQueue;
-    }
-    async recordGameSession(entry) { if (!this.active) return this.queueOfflineSession(entry); try { return await this.request(config().endpoints.gameSessions || '/game-sessions', { method: 'POST', headers: { 'X-Idempotency-Key': String(entry.id || '') }, body: JSON.stringify({ ...entry, playerId: undefined }) }); } catch (_) { return this.queueOfflineSession(entry); } }
-    async submitGameResult(entry) {
-      if (!this.active) return null;
-      const body = { gameId: entry.gameId, sessionId: entry.sessionId, score: Number(entry.score || 0), duration: Number(entry.duration || 0), metadata: clone(entry.metadata || entry.result || {}), timestamp: Number(entry.timestamp || Date.now()) };
-      try {
-        const payload = await this.request(config().endpoints.gameResults || '/games/result', { method: 'POST', headers: { 'X-Idempotency-Key': `reward:${body.sessionId}` }, body: JSON.stringify(body) });
-        if (payload?.player) this.hydrate(payload.player, this.getCurrentPlayerSync());
-        if (payload?.rewardProof) core().RewardManager?.award?.(entry.gameId, { rewardProof: payload.rewardProof });
-        return payload;
-      } catch (error) {
-        if (error?.code === 'result_rejected' || error?.status === 422 || error?.code === 'session_forbidden' || error?.code === 'result_session_mismatch') {
-          try { window.dispatchEvent(new CustomEvent('teleplay:reward-rejected', { detail: { ...body, code: error.code } })); } catch (_) {}
-          return null;
-        }
-        const current = this.local.getCurrentPlayerSync(), pending = [...(current.serverSync?.pendingGameResults || []).filter(item => item.sessionId !== body.sessionId), body];
-        this.local.savePlayer({ ...current, serverSync: { ...(current.serverSync || {}), pendingGameResults: pending, pending: true, updatedAt: Date.now(), error: error.code || 'reward_sync_failed' } });
-        notifyState({ phase: 'degraded', healthy: false, fallback: true, message: friendlyError({ code: 'sync_failed' }), lastError: error.code || 'reward_sync_failed' });
-        return null;
-      }
-    }
-    getAnalyticsEventsSync() { return this.local.getAnalyticsEventsSync(); }
-    getAdminActionsSync() { return this.local.getAdminActionsSync(); }
-    async postAdminAction(entry) { const local = this.local.recordAdminAction(entry); if (!this.active) return null; return this.request(config().endpoints.adminActions, { method: 'POST', body: JSON.stringify({ ...entry, adminId: core().TelegramAuth?.identity?.().telegramId || entry.adminId }) }); }
-    async postAnalyticsEvent(entry) { const local = this.local.recordAnalyticsEvent(entry); if (!this.active) return local; try { await this.request(config().endpoints.analytics, { method: 'POST', headers: { 'X-Idempotency-Key': String(entry.id || '') }, body: JSON.stringify({ ...entry, playerId: undefined }) }); } catch (_) { this.queueOfflineAnalytics(entry, false); } return local; }
-    recordAnalyticsEvent(entry) { this.postAnalyticsEvent(entry).catch(() => {}); return entry; }
-    recordAdminAction(entry) { this.postAdminAction(entry).catch(() => {}); return entry; }
-  }
-
-  const local = new LocalStorageProvider(), backend = new BackendProvider(local), configuredBackend = config().mode === 'backend';
-  activeProvider = local;
-  state = { configuredMode: config().mode, activeMode: 'local', phase: 'idle', healthy: false, fallback: false, message: '', lastError: null, updatedAt: Date.now() };
-  // Administrative reads must never be silently substituted with the owner's
-  // local save.  A configured backend can be retried directly with `strict`
-  // even if the gameplay provider is temporarily in its graceful fallback.
-  const readProvider = () => configuredBackend ? backend : activeProvider;
-  const activateBackend = patch => { activeProvider = backend; backend.active = true; notifyState({ activeMode: 'backend', phase: 'online', healthy: true, fallback: false, message: '', lastError: null, ...patch }); };
-  const activateFallback = (error, phase = 'offline') => { activeProvider = local; backend.active = false; return notifyState({ activeMode: 'local', phase, healthy: false, fallback: configuredBackend, message: error?.userMessage || friendlyError(error || {}), lastError: error?.code || error?.message || 'backend_unavailable' }); };
-
-  const DataProvider = {
-    get provider() { return activeProvider; },
-    mode: config().mode,
-    configuredMode: config().mode,
-    isBackendEnabled: () => configuredBackend,
-    isBackendActive: () => activeProvider === backend && backend.active,
-    status: () => clone(state),
-    async initialize() {
-      notifyState({ phase: 'checking', message: '', lastError: null });
-      if (!configuredBackend) { activeProvider = local; notifyState({ phase: 'ready', activeMode: 'local', healthy: true, fallback: false }); return { status: 'local', snapshot: local.getCurrentPlayerSync() }; }
-      if (!config().backendUrl) { const error = new ProviderError('backend_url_missing', { userMessage: friendlyError({ code: 'backend_url_missing' }) }); activateFallback(error, 'misconfigured'); return { status: 'fallback', error, snapshot: local.getCurrentPlayerSync() }; }
-      try {
-        const result = await backend.initialize();
-        activateBackend(); return result;
-      } catch (error) {
-        activateFallback(error);
-        if (!config().allowLocalFallback) throw error;
-        return { status: 'fallback', error, snapshot: local.getCurrentPlayerSync() };
-      }
-    },
-    async importLocalPlayer() { try { const result = await backend.importLocalPlayer(); activateBackend({ imported: true }); return { ok: true, ...result }; } catch (error) { activateFallback(error, 'migration_failed'); return { ok: false, error }; } },
-    async createRemotePlayer() { try { const snapshot = await backend.createCurrentPlayer(); activateBackend({ created: true }); return { ok: true, snapshot }; } catch (error) { activateFallback(error); return { ok: false, error }; } },
-    continueLocal() { return activateFallback(new ProviderError('migration_deferred', { userMessage: 'Ð¡ÐµÑ€Ð²ÐµÑ€Ð½Ñ‹Ð¹ Ð¸Ð¼Ð¿Ð¾Ñ€Ñ‚ Ð¾Ñ‚Ð»Ð¾Ð¶ÐµÐ½. ÐŸÑ€Ð¾Ð³Ñ€ÐµÑÑ ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ÑÑ Ð½Ð° ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ðµ.' }), 'local_only'); },
-    async retry() { return this.initialize(); },
-    healthCheck: () => backend.healthCheck(),
-    getCurrentPlayerSync: () => activeProvider.getCurrentPlayerSync(),
-    savePlayer: snapshot => {
-      if (activeProvider === backend) return backend.savePlayer(snapshot);
-      if (!configuredBackend) return local.savePlayer(snapshot);
-      return local.savePlayer({ ...snapshot, serverSync: { ...(snapshot.serverSync || {}), pending: true, updatedAt: Date.now() } });
-    },
-    syncCurrentPlayer: () => activeProvider.syncCurrentPlayer(),
-    listPlayers: options => readProvider().listPlayers(options),
-    getPlayer: (playerId, options) => readProvider().getPlayer(playerId, options),
-    getTransactions: options => readProvider().getTransactions(options),
-    getAnalyticsEvents: options => readProvider().getAnalyticsEvents(options),
-    getAdminActions: options => readProvider().getAdminActions(options),
-    getRewardProofs: options => readProvider().getRewardProofs(options),
-    getGameResults: options => readProvider().getGameResults(options),
-    getFraudEvents: options => readProvider().getFraudEvents(options),
-    getPaymentPackages: () => backend.getPaymentPackages(),
-    createPaymentInvoice: (packageId, idempotencyKey) => backend.createPaymentInvoice(packageId, idempotencyKey),
-    getPayments: options => backend.getPayments({ ...(options || {}), strict: true }),
-    getMyPayments: () => backend.getMyPayments(),
-    getAnalyticsEventsSync: () => activeProvider.getAnalyticsEventsSync(),
-    getAdminActionsSync: () => activeProvider.getAdminActionsSync(),
-    recordAnalyticsEvent: entry => activeProvider === backend ? backend.recordAnalyticsEvent(entry) : (configuredBackend ? backend.queueOfflineAnalytics(entry) : local.recordAnalyticsEvent(entry)),
-    recordAdminAction: entry => activeProvider.recordAdminAction(entry),
-    postAdminAction: entry => activeProvider.postAdminAction(entry),
-    postAnalyticsEvent: entry => activeProvider === backend ? backend.postAnalyticsEvent(entry) : (configuredBackend ? Promise.resolve(backend.queueOfflineAnalytics(entry)) : local.postAnalyticsEvent(entry)),
-    recordTransaction: entry => activeProvider === backend ? backend.recordTransaction(entry) : (configuredBackend ? Promise.resolve(backend.queueOfflineTransaction(entry)) : undefined),
-    recordGameSession: entry => activeProvider === backend ? backend.recordGameSession(entry) : (configuredBackend ? Promise.resolve(backend.queueOfflineSession(entry)) : undefined),
-    submitGameResult: entry => activeProvider === backend ? backend.submitGameResult(entry) : undefined,
-    databaseSchema: () => window.TelePlayDataModel?.schema || {},
-    migrationSummary: () => migrationSummary(backend.initialLocalSnapshot)
-  };
-  window.TelePlayProviders = { LocalStorageProvider, BackendProvider, ProviderError };
-  window.TelePlayCore ??= {};
-  window.TelePlayCore.DataProvider = DataProvider;
-  window.TelePlayDataProvider = DataProvider;
-})();
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×myÑ:-jZ.¶›­–)Þ³R‚‚’Óâ°¢6öç7B6÷&RÒ‚’Óâv–æF÷råFVÆUÆ”6÷&RÇÂ·Ó°¢6öç7B6öæf–rÒ‚’Óâv–æF÷råFVÆUÆ”FF6öæf–rÇÂ²ÖöFS¢vÆö6ÂrÂ&6¶VæEW&Ã¢rrÂVæGö–çG3¢·ÒÓ°¢6öç7BÖöFVÂÒ‚’Óâv–æF÷råFVÆUÆ”FFÖöFVÂÇÂ²Fõ&V6÷&C¢fÇVRÓâfÇVRÂg&öÕ&V6÷&C¢fÇVRÓâfÇVRÓ°¢6öç7B6ÆöæRÒfÇVRÓâ²G'’²&WGW&â¥4ôâç'6R„¥4ôâç7G&–æv–g’‡fÇVRóò·Ò’“²Ò6F6‚…ò’²&WGW&â·Ó²ÒÓ°¢6öç7B–BÒ&Vf—‚ÓâG·&Vf—‡Ó¢G´FFRææ÷r‚—Ó¢G´ÖF‚ç&æFöÒ‚’çFõ7G&–ærƒ3b’ç6Æ–6Rƒ"Â’—Ö°¢6öç7BVW'•7G&–ærÒ&×2Óâ°¢6öç7BVW'’ÒæWrU$Å6V&6…&×2‚“°¢ö&¦V7BæVçG&–W2‡&×2ÇÂ·Ò’æf÷$V6‚‚…¶¶W’ÂfÇVUÒ’Óâ²–b‡fÇVRÒçVÆÂbbfÇVRÓÒrr’VW'’ç6WB†¶W’Â7G&–ær‡fÇVR’“²Ò“°¢6öç7B&W7VÇBÒVW'’çFõ7G&–ær‚“²&WGW&â&W7VÇBòòG·&W7VÇGÖ¢rs°¢Ó°¢6öç7B7W'&VçD–BÒ‚’Óâ7G&–ær†6÷&R‚’åÆ–W$FFòævWCòâ‚’ç&öf–ÆSòæ–BÇÂ6÷&R‚’åFVÆVw&ÔWFƒòæ–FVçF—G“òâ‚’çFVÆVw&Ô–BÇÂvwVW7Br“°¢6öç7B†4ÖVæ–ævgVÄÆö6ÄFFÒ6æ6†÷BÓâ°¢6öç7B7FFRÒ6æ6†÷BÇÂ·ÒÂ7FG2Ò7FFRç7FF—7F–72ÇÂ·ÒÂ–çfVçF÷'’Ò7FFRæ–çfVçF÷'’ÇÂ·Ó°¢6öç7B÷væVE&öf–ÆRÒ–çfVçF÷'’ç&öf–ÆSòæ÷væVD—FV×2ÇÂ–çfVçF÷'’æ÷væVD—FV×2ÇÂµÓ°¢6öç7B÷væVDvÖW2Òö&¦V7BçfÇVW2†–çfVçF÷'’ævÖW2ÇÂ·Ò’ç6öÖR‡66÷RÓâ‡66÷Sòæ÷væVD—FV×2ÇÂµÒ’æÆVæwF‚â“°¢&WGW&âçVÖ&W"‡7FFRæ6ö–ç2ÇÂ’âÇÂçVÖ&W"‡7FFRævV×2ÇÂ7FFRçFVÆTvV×2ÇÂ’âÇÂçVÖ&W"‡7FFRç&öw&W73òçF÷FÅ…ÇÂ7FFRç&öw&W73òç‡ÇÂ’âÇÂçVÖ&W"‡7FG2çF÷FÄvÖW2ÇÂ7FG2ævÖW5Æ–VBÇÂ’âÇÂö&¦V7Bæ¶W—2‡7FFRç&V6÷&G2ÇÂ·Ò’æÆVæwF‚âÇÂ‡7FFRæ6†–WfVÖVçG3òçVæÆö6¶VD6†–WfVÖVçG2ÇÂµÒ’æÆVæwF‚âÇÂ÷væVE&öf–ÆRç6öÖR†—FVÒÓâ—FVÒÓÒvfF"Ög&ÖRÖæVöâr’ÇÂ÷væVDvÖW3°¢Ó°¢6öç7BÖ–w&F–öå7VÖÖ'’Ò6æ6†÷BÓâ‡°¢6ö–ç3¢ÖF‚æÖ‚ƒÂçVÖ&W"‡6æ6†÷Còæ6ö–ç2ÇÂ’’À¢vV×3¢ÖF‚æÖ‚ƒÂçVÖ&W"‡6æ6†÷CòævV×2ÇÂ6æ6†÷CòçFVÆTvV×2ÇÂ’’À¢ÆWfVÃ¢ÖF‚æÖ‚ƒÂçVÖ&W"‡6æ6†÷Còç&öw&W73òæÆWfVÂÇÂ’’À¢F÷FÅ…¢ÖF‚æÖ‚ƒÂçVÖ&W"‡6æ6†÷Còç&öw&W73òçF÷FÅ…ÇÂ6æ6†÷Còç&öw&W73òç‡ÇÂ’’À¢—FV×3¢‡6æ6†÷Còæ–çfVçF÷'“òç&öf–ÆSòæ÷væVD—FV×2ÇÂµÒ’æÆVæwF‚²ö&¦V7BçfÇVW2‡6æ6†÷Còæ–çfVçF÷'“òævÖW2ÇÂ·Ò’ç&VGV6R‚‡7VÒÂ66÷R’Óâ7VÒ²‡66÷Sòæ÷væVD—FV×2ÇÂµÒ’æÆVæwF‚Â’À¢6†–WfVÖVçG3¢‡6æ6†÷Còæ6†–WfVÖVçG3òçVæÆö6¶VD6†–WfVÖVçG2ÇÂµÒ’æÆVæwF€¢Ò“° ¢6Æ72&÷f–FW$W'&÷"W‡FVæG2W'&÷"°¢6öç7G'V7F÷"†6öFRÂ²7FGW2ÒÂW6W$ÖW76vRÒrrÂ&WG'–&ÆRÒfÇ6RÂ6W6RÒçVÆÂÒÒ·Ò’°¢7WW"†6öFR“²F†—2ææÖRÒu&÷f–FW$W'&÷"s²F†—2æ6öFRÒ6öFS²F†—2ç7FGW2Ò7FGW3²F†—2çW6W$ÖW76vRÒW6W$ÖW76vS²F†—2ç&WG'–&ÆRÒ&WG'–&ÆS²F†—2æ6W6RÒ6W6S°¢Ð¢Ð¢6öç7Bg&–VæFÇ”W'&÷"ÒW'&÷"Óâ°¢6öç7B6öFRÒW'&÷#òæ6öFRÇÂW'&÷#òæÖW76vRÇÂv&6¶VæEöW'&÷"s°¢–b…²wFVÆVw&ÕöWF…÷&WV—&VBrÂwFVÆVw&ÕöWF…ö–çfÆ–BrÂwFVÆVw&ÕöWF…öW‡—&VBrÂv&6¶VæEö‡GGóCuÒæ–æ6ÇVFW2†6öFR’’&WGW&â}	í-­í’FVÆUÆ’}]]rFVÆVw&ÒÂ}-í²Ý]íÝ}í--ÂýíM½Ââs°¢–b†6öFRÓÓÒv&6¶VæE÷W&ÅöÖ—76–ærr’&WGW&â}	ÝR=M½íÂ}==}-ÂýíM½Ââ	ýí--íý]ÂýíM­½í}]Ý^(
+bs°¢–b…²v&6¶VæE÷F–ÖV÷WBrÂv&6¶VæE÷Væf–Æ&ÆRrÂv†VÇF…ö6†V6µöf–ÆVBuÒæ–æ6ÇVFW2†6öFR’’&WGW&â}	ÝR=M½íÂ}==}-ÂýíM½Ââ	ýí--íý]ÂýíM­½í}]Ý^(
+bs°¢–b†6öFRÓÓÒw7–æ5öf–ÆVBr’&WGW&â}	ÝR=M½íÂÝ]íÝ}í--Âýí=]â	ýí--íý]ÂýíM­½í}]Ý^(
+bs°¢&WGW&â}	ÝR=M½íÂ}==}-ÂýíM½Ââ	ýí--íý]ÂýíM­½í}]Ý^(
+bs°¢Ó° ¢6Æ72Æö6Å7F÷&vU&÷f–FW"°¢6öç7G'V7F÷"‚’²F†—2æ¶–æBÒvÆö6Âs²Ð¢vWD7W'&VçEÆ–W%7–æ2‚’²&WGW&â6÷&R‚’å6fTÖævW#òç&VCòâ‚’ÇÂ·Ó²Ð¢6fUÆ–W"‡6æ6†÷B’²&WGW&â6÷&R‚’å6fTÖævW#òçw&—FSòâ‡6æ6†÷B’ÇÂ6æ6†÷C²Ð¢7–æ47W'&VçEÆ–W"‚’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚’“²Ð¢æ÷&ÖÆ—¦U&V6÷&B‡fÇVR’²&WGW&âÖöFVÂ‚’çFõ&V6÷&B‡fÇVR“²Ð¢Æö6ÅÆ–W%&÷w2‚’²&WGW&â·F†—2ææ÷&ÖÆ—¦U&V6÷&B‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚’•Ó²Ð¢Æ—7EÆ–W'2†÷F–öç2Ò·Ò’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2æf–ÇFW%Æ–W'2‡F†—2æÆö6ÅÆ–W%&÷w2‚’Â÷F–öç2’“²Ð¢f–ÇFW%Æ–W'2‡&÷w2Â÷F–öç2Ò·Ò’°¢6öç7BVW'’Ò7G&–ær†÷F–öç2çVW'’ÇÂrr’çG&–Ò‚’çFôÆ÷vW$66R‚’ç&WÆ6R‚õäòÂrr’Âf–ÇFW'2Ò÷F–öç2æf–ÇFW'2ÇÂ·Ó°¢&WGW&â&÷w2æf–ÇFW"‡Æ–W"Óâ°¢6öç7BÖF6†W5VW'’ÒVW'’ÇÂ7G&–ær‡Æ–W"çFVÆVw&Ô–BÇÂrr’çFôÆ÷vW$66R‚’æ–æ6ÇVFW2‡VW'’’ÇÂ7G&–ær‡Æ–W"çW6W&æÖRÇÂrr’çFôÆ÷vW$66R‚’æ–æ6ÇVFW2‡VW'’“°¢6öç7B7&VFVBÒÆ–W"æ7&VFVDBòæWrFFR‡Æ–W"æ7&VFVDB’çFô•4õ7G&–ær‚’ç6Æ–6RƒÂ’¢rrÂ7F—fRÒÆ–W"æÆ7D7F—fRòæWrFFR‡Æ–W"æÆ7D7F—fR’çFô•4õ7G&–ær‚’ç6Æ–6RƒÂ’¢rrÂFöF’ÒæWrFFR‚’çFô•4õ7G&–ær‚’ç6Æ–6RƒÂ“°¢–b‚†f–ÇFW'2ææWuÆ–W'2ÇÂ÷F–öç2æf–ÇFW"ÓÓÒvæWrr’bb7&VFVBÓÒFöF’’&WGW&âfÇ6S°¢–b‚†f–ÇFW'2æ7F—fUFöF’ÇÂ÷F–öç2æf–ÇFW"ÓÓÒv7F—fRr’bb7F—fRÓÒFöF’’&WGW&âfÇ6S°¢&WGW&âÖF6†W5VW'“°¢Ò“°¢Ð¢vWEÆ–W"‡Æ–W$–B’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2æÆö6ÅÆ–W%&÷w2‚’æf–æB‡Æ–W"Óâ7G&–ær‡Æ–W"çFVÆVw&Ô–B’ÓÓÒ7G&–ær‡Æ–W$–B’’ÇÂçVÆÂ“²Ð¢æ÷&ÖÆ—¦UG&ç67F–öâ†—FVÒ’²&WGW&â²ââæ6ÆöæR†—FVÒ’ÂÆ–W$–C¢—FVÒçÆ–W$–BÇÂ7W'&VçD–B‚’Â7W'&Væ7“¢—FVÒæ7W'&Væ7’ÇÂ—FVÒæ7W'&Væ7•G—RÇÂv6ö–ç2rÂÖ÷VçC¢çVÖ&W"†—FVÒæÖ÷VçBÇÂ’Ó²Ð¢vWEG&ç67F–öç2†÷F–öç2Ò·Ò’²6öç7B†—7F÷'’ÒF†—2ævWD7W'&VçEÆ–W%7–æ2‚’æ7W'&Væ7•G&ç67F–öç2ÇÂµÓ²&WGW&â&öÖ—6Rç&W6öÇfR††—7F÷'’æÖ†—FVÒÓâF†—2ææ÷&ÖÆ—¦UG&ç67F–öâ†—FVÒ’’æf–ÇFW"†—FVÒÓâ÷F–öç2çÆ–W$–BÇÂ7G&–ær†—FVÒçÆ–W$–B’ÓÓÒ7G&–ær†÷F–öç2çÆ–W$–B’’“²Ð¢vWDæÇ—F–74WfVçG57–æ2‚’²&WGW&â²âââ‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚’ææÇ—F–74WfVçG2ÇÂµÒ•ÒæÖ†—FVÒÓâ‡²ââæ6ÆöæR†—FVÒ’ÂÆ–W$–C¢—FVÒçÆ–W$–BÇÂ7W'&VçD–B‚’ÂF–ÖW7F×¢—FVÒçF–ÖW7F×ÇÂ—FVÒæ7&VFVDBÒ’“²Ð¢vWDFÖ–ä7F–öç57–æ2‚’²&WGW&â²âââ‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚’æFÖ–ä7F–öäÆörÇÂµÒ•ÒæÖ†—FVÒÓâ‡²ââæ6ÆöæR†—FVÒ’ÂF&vWEÆ–W#¢—FVÒçF&vWEÆ–W"ÇÂ7W'&VçD–B‚’Ò’“²Ð¢vWE&Wv&E&öög2‚’²&WGW&â&öÖ—6Rç&W6öÇfR…µÒ“²Ð¢vWDvÖU&W7VÇG2‚’²&WGW&â&öÖ—6Rç&W6öÇfR…µÒ“²Ð¢vWDg&VDWfVçG2‚’²&WGW&â&öÖ—6Rç&W6öÇfR…µÒ“²Ð¢vWDæÇ—F–74WfVçG2‚’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2ævWDæÇ—F–74WfVçG57–æ2‚’“²Ð¢vWDFÖ–ä7F–öç2‚’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2ævWDFÖ–ä7F–öç57–æ2‚’“²Ð¢VæB†¶W’ÂVçG'’’²6öç7B6fRÒF†—2ævWD7W'&VçEÆ–W%7–æ2‚’Â†—7F÷'’Ò'&’æ—4'&’‡6fU¶¶W•Ò’ò6fU¶¶W•Ò¢µÓ²F†—2ç6fUÆ–W"‡²ââç6fRÂ¶¶W•Ó¢²ââæ†—7F÷'’ÂVçG'•Òç6Æ–6R‚Ó3’Ò“²&WGW&âVçG'“²Ð¢&V6÷&DæÇ—F–74WfVçB†VçG'’’²&WGW&âF†—2æVæB‚væÇ—F–74WfVçG2rÂ²–C¢VçG'’æ–BÇÂ–B‚vWfVçBr’ÂÆ–W$–C¢VçG'’çÆ–W$–BÇÂ7W'&VçD–B‚’ÂWfVçC¢7G&–ær†VçG'’æWfVçBÇÂwVæ¶æ÷vâr’ÂF–ÖW7F×¢VçG'’çF–ÖW7F×ÇÂFFRææ÷r‚’ÂÖWFFF¢6ÆöæR†VçG'’æÖWFFFÇÂVçG'’ç&×2ÇÂ·Ò’Ò“²Ð¢&V6÷&DFÖ–ä7F–öâ†VçG'’’²&WGW&âF†—2æVæB‚vFÖ–ä7F–öäÆörrÂ²–C¢VçG'’æ–BÇÂ–B‚vFÖ–âr’Âââæ6ÆöæR†VçG'’’ÂF&vWEÆ–W#¢VçG'’çF&vWEÆ–W"ÇÂ7W'&VçD–B‚’ÂF–ÖW7F×¢VçG'’çF–ÖW7F×ÇÂFFRææ÷r‚’Ò“²Ð¢÷7DFÖ–ä7F–öâ†VçG'’’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2ç&V6÷&DFÖ–ä7F–öâ†VçG'’’“²Ð¢÷7DæÇ—F–74WfVçB†VçG'’’²&WGW&â&öÖ—6Rç&W6öÇfR‡F†—2ç&V6÷&DæÇ—F–74WfVçB†VçG'’’“²Ð¢Ð ¢ÆWB7F—fU&÷f–FW"Â7FFS°¢6öç7Bæ÷F–g•7FFRÒF6‚Óâ°¢7FFRÒ²ââç7FFRÂââçF6‚ÂWFFVDC¢FFRææ÷r‚’Ó°¢G'’²v–æF÷ræF—7F6„WfVçB†æWr7W7FöÔWfVçB‚wFVÆWÆ“¦FF×7FGW2rÂ²FWF–Ã¢6ÆöæR‡7FFR’Ò’“²Ò6F6‚…ò’·Ð¢&WGW&â7FFS°¢Ó° ¢6Æ72&6¶VæE&÷f–FW"°¢6öç7G'V7F÷"†Æö6Â’²F†—2æ¶–æBÒv&6¶VæBs²F†—2æÆö6ÂÒÆö6Ã²F†—2ç7–æ5F–ÖW"ÒçVÆÃ²F†—2æ7W'&Væ7•VWVRÒ&öÖ—6Rç&W6öÇfR‚“²F†—2æ7F—fRÒfÇ6S²F†—2æ–æ—F–ÄÆö6Å6æ6†÷BÒ6ÆöæR†Æö6ÂævWD7W'&VçEÆ–W%7–æ2‚’“²Ð¢vWD7W'&VçEÆ–W%7–æ2‚’²&WGW&âF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚“²Ð¢6fUÆ–W"‡6æ6†÷B’°¢6öç7B6fVBÒF†—2æÆö6Âç6fUÆ–W"‡²ââç6æ6†÷BÂ6W'fW%7–æ3¢²âââ‡6æ6†÷Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æs¢F†—2æ7F—fRÂWFFVDC¢FFRææ÷r‚’ÒÒ“°¢–b‡F†—2æ7F—fR’F†—2çVWVU7FFU7–æ2‡6fVB“°¢&WGW&â6fVC°¢Ð¢7–æ2&WVW7B‡F‚Â÷F–öç2Ò·Ò’°¢6öç7B&6RÒ6öæf–r‚’æ&6¶VæEW&Ã°¢–b‚&6R’F‡&÷ræWr&÷f–FW$W'&÷"‚v&6¶VæE÷W&ÅöÖ—76–ærrÂ²W6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢v&6¶VæE÷W&ÅöÖ—76–ærrÒ’Ò“°¢–b‡G—VöbfWF6‚ÓÒvgVæ7F–öâr’F‡&÷ræWr&÷f–FW$W'&÷"‚v&6¶VæE÷Væf–Æ&ÆRrÂ²&WG'–&ÆS¢G'VRÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢v&6¶VæE÷Væf–Æ&ÆRrÒ’Ò“°¢6öç7B&WV—&W4WF‚Ò÷F–öç2ç&WV—&W4WF‚ÓÒfÇ6RÂWF‚Ò6÷&R‚’åFVÆVw&ÔWFƒ°¢–b‡&WV—&W4WF‚bbWFƒòæ–æ—DFFòâ‚’’F‡&÷ræWr&÷f–FW$W'&÷"‚wFVÆVw&ÕöWF…÷&WV—&VBrÂ²7FGW3¢CÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢wFVÆVw&ÕöWF…÷&WV—&VBrÒ’Ò“°¢6öç7B6öçG&öÆÆW"ÒG—Vöb&÷'D6öçG&öÆÆW"ÓÓÒvgVæ7F–öâròæWr&÷'D6öçG&öÆÆW"‚’¢çVÆÃ°¢6öç7BF–ÖV÷WD×2ÒçVÖ&W"†÷F–öç2çF–ÖV÷WD×2ÇÂ6öæf–r‚’ç&WVW7EF–ÖV÷WD×2ÇÂƒ’ÂF–ÖW"Ò6öçG&öÆÆW"ò6WEF–ÖV÷WB‚‚’Óâ6öçG&öÆÆW"æ&÷'B‚’ÂF–ÖV÷WD×2’¢çVÆÃ°¢6öç7B†VFW'2Ò&WV—&W4WF‚ò†WFƒòæ†VFW'3òâ‡²t6öçFVçBÕG—Rs¢vÆ–6F–öâö§6öârÒ’ÇÂ·Ò’¢²66WC¢vÆ–6F–öâö§6öârÂt6öçFVçBÕG—Rs¢vÆ–6F–öâö§6öârÓ°¢G'’°¢6öç7B&W7öç6RÒv—BfWF6‚†G¶&6WÒG·F‡ÖÂ²ââæ÷F–öç2Â6–væÃ¢6öçG&öÆÆW#òç6–væÂÂ†VFW'3¢²ââæ†VFW'2Ââââ†÷F–öç2æ†VFW'2ÇÂ·Ò’ÒÒ“°¢ÆWB–ÆöBÒçVÆÃ²G'’²–ÆöBÒ&W7öç6Rç7FGW2ÓÓÒ#BòçVÆÂ¢v—B&W7öç6Ræ§6öâ‚“²Ò6F6‚…ò’·Ð¢–b‚&W7öç6Ræö²’°¢6öç7B6öFRÒ–ÆöCòæW'&÷"ÇÂ&6¶VæEö‡GGòG·&W7öç6Rç7FGW7Ö°¢F‡&÷ræWr&÷f–FW$W'&÷"†6öFRÂ²7FGW3¢&W7öç6Rç7FGW2Â&WG'–&ÆS¢&W7öç6Rç7FGW2ãÒSÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFRÒ’Ò“°¢Ð¢&WGW&â–ÆöC°¢Ò6F6‚†W'&÷"’°¢–b†W'&÷"–ç7Fæ6Vöb&÷f–FW$W'&÷"’F‡&÷rW'&÷#°¢6öç7BF–ÖV÷WBÒW'&÷#òææÖRÓÓÒt&÷'DW'&÷"s°¢F‡&÷ræWr&÷f–FW$W'&÷"‡F–ÖV÷WBòv&6¶VæE÷F–ÖV÷WBr¢v&6¶VæE÷Væf–Æ&ÆRrÂ²&WG'–&ÆS¢G'VRÂ6W6S¢W'&÷"ÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢F–ÖV÷WBòv&6¶VæE÷F–ÖV÷WBr¢v&6¶VæE÷Væf–Æ&ÆRrÒ’Ò“°¢Òf–æÆÇ’²–b‡F–ÖW"’6ÆV%F–ÖV÷WB‡F–ÖW"“²Ð¢Ð¢7–æ2†VÇF„6†V6²‚’°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æ†VÇF‚ÇÂrö†VÇF‚rÂ²ÖWF†öC¢ttUBrÂ&WV—&W4WFƒ¢fÇ6RÂF–ÖV÷WD×3¢6öæf–r‚’æ†VÇF…F–ÖV÷WD×2Ò“°¢–b‚‡–ÆöCòç7FGW2ÓÓÒvö²rÇÂ–ÆöCòæö²ÓÓÒG'VR’’F‡&÷ræWr&÷f–FW$W'&÷"‚v†VÇF…ö6†V6µöf–ÆVBrÂ²&WG'–&ÆS¢G'VRÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢v†VÇF…ö6†V6µöf–ÆVBrÒ’Ò“°¢&WGW&â–ÆöC°¢Ð¢‡–G&FR‡&V6÷&BÂ7W'&VçBÒF†—2ævWD7W'&VçEÆ–W%7–æ2‚’’°¢6öç7BæW‡BÒÖöFVÂ‚’æg&öÕ&V6÷&B‡&V6÷&BÂ7W'&VçB“°¢&WGW&âF†—2æÆö6Âç6fUÆ–W"‡²ââææW‡BÂ6W'fW%7–æ3¢²VæF–æs¢fÇ6RÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢Ð¢G&ç67F–öä&öG’†VçG'’’²&WGW&â²–C¢VçG'’æ–BÂ7W'&Væ7•G—S¢VçG'’æ7W'&Væ7•G—RÇÂVçG'’æ7W'&Væ7’ÇÂv6ö–ç2rÂG—S¢VçG'’çG—RÓÓÒw7VæBròw7VæBr¢vV&ârÂÖ÷VçC¢ÖF‚æ'2„çVÖ&W"†VçG'’æÖ÷VçBÇÂ’’Â6÷W&6S¢VçG'’ç6÷W&6RÇÂw7—7FVÒrÂÖWFFF¢VçG'’æÖWFFFÇÂ·ÒÓ²Ð¢VWVTöffÆ–æUG&ç67F–öâ†VçG'’’°¢6öç7B&öG’ÒF†—2çG&ç67F–öä&öG’†VçG'’’Â7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂVæF–æuG&ç67F–öç2Ò²âââ†7W'&VçBç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B’Â&öG•Ó°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç2ÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÒÒ“°¢&WGW&âçVÆÃ°¢Ð¢VWVTöffÆ–æTæÇ—F–72†VçG'’Â&V6÷&DÆö6ÂÒG'VR’°¢6öç7B6fVBÒ&V6÷&DÆö6ÂòF†—2æÆö6Âç&V6÷&DæÇ—F–74WfVçB†VçG'’’¢VçG'’Â7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂfÇVRÒ²ââæ6ÆöæR†VçG'’’Â–C¢VçG'’æ–BÇÂ6fVCòæ–BÇÂ–B‚vWfVçBr’ÂF–ÖW7F×¢VçG'’çF–ÖW7F×ÇÂVçG'’æ7&VFVDBÇÂFFRææ÷r‚’ÒÂVæF–ætæÇ—F–72Ò²âââ†7W'&VçBç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒfÇVRæ–B’ÂfÇVUÓ°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–ætæÇ—F–72ÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÒÒ“°¢&WGW&âfÇVS°¢Ð¢VWVTöffÆ–æU6W76–öâ†VçG'’’°¢6öç7B7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂfÇVRÒ6ÆöæR†VçG'’’Â¶W’ÒG·fÇVRæ–GÓ¢G·fÇVRæf–æ—6†VDBòvf–æ—6‚r¢w7F'BwÖÂVæF–æu6W76–öç2Ò²âââ†7W'&VçBç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâG¶—FVÒæ–GÓ¢G¶—FVÒæf–æ—6†VDBòvf–æ—6‚r¢w7F'BwÖÓÒ¶W’’ÂfÇVUÓ°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æu6W76–öç2ÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÒÒ“°¢&WGW&âçVÆÃ°¢Ð¢W&ÖæVçEG&ç67F–öäW'&÷"†W'&÷"’°¢&WGW&â²w6W'fW%÷&Wv&E÷&WV—&VBrÂv–çfÆ–E÷6†÷ö—FVÒrÂv–çfÆ–E÷6†÷÷&–6RrÂv–çfÆ–E÷6†÷÷6÷W&6RrÂvg&VUö—FVÒrÂv—FVÕöÇ&VG•ö÷væVBrÂv–ç7Vff–6–VçEö&Ææ6RrÂv–çfÆ–EöÖ÷VçBrÂv–çfÆ–E÷G&ç67F–öå÷6÷W&6RrÂv–çfÆ–E÷G&ç67F–öå÷G—RuÒæ–æ6ÇVFW2†W'&÷#òæ6öFR“°¢Ð¢7–æ2&WÆ•VæF–æuw&—FW2‚’°¢6öç7B7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂVæF–ærÒ'&’æ—4'&’†7W'&VçCòç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2’ò7W'&VçBç6W'fW%7–æ2çVæF–æuG&ç67F–öç2¢µÓ°¢f÷"†6öç7B&öG’öbVæF–ær’°¢ÆWB–ÆöC°¢G'’°¢–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2çG&ç67F–öç2Â²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†&öG’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’†&öG’’Ò“°¢Ò6F6‚†W'&÷"’°¢–b‚F†—2çW&ÖæVçEG&ç67F–öäW'&÷"†W'&÷"’’F‡&÷rW'&÷#°¢6öç7BÆFW7BÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Â&VÖ–æ–ærÒ†ÆFW7Bç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B“°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæÆFW7BÂ6W'fW%7–æ3¢²âââ†ÆFW7Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç3¢&VÖ–æ–ærÂVæF–æs¢&VÖ–æ–æræÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÂÆ7E&V¦V7FVEG&ç67F–öã¢W'&÷"æ6öFRÒÒ“°¢6öçF–çVS°¢Ð¢6öç7BÆFW7BÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Â&VÖ–æ–ærÒ†ÆFW7Bç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B’Â7W'&Væ7’Ò&öG’æ7W'&Væ7•G—RÓÓÒvvV×2ròvvV×2r¢v6ö–ç2s°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæÆFW7BÂâââ‡–ÆöCòæ&Ææ6RÒçVÆÂò²¶7W'&Væ7•Ó¢çVÖ&W"‡–ÆöBæ&Ææ6R’Ò¢·Ò’Â6W'fW%7–æ3¢²âââ†ÆFW7Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç3¢&VÖ–æ–ærÂVæF–æs¢&VÖ–æ–æræÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢Ð¢6öç7BæÇ—F–72Ò²âââ‡F†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ•Ó°¢f÷"†6öç7BVçG'’öbæÇ—F–72’°¢v—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ææÇ—F–72Â²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†VçG'’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’‡²ââæVçG'’ÂÆ–W$–C¢VæFVf–æVBÒ’Ò“°¢6öç7BÆFW7BÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂVæF–ætæÇ—F–72Ò†ÆFW7Bç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒVçG'’æ–B“°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæÆFW7BÂ6W'fW%7–æ3¢²âââ†ÆFW7Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–ætæÇ—F–72ÂVæF–æs¢VæF–ætæÇ—F–72æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢Ð¢6öç7B6W76–öç2Ò²âââ‡F†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ•Ó°¢f÷"†6öç7BVçG'’öb6W76–öç2’°¢v—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ævÖU6W76–öç2ÇÂrövÖR×6W76–öç2rÂ²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†VçG'’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’‡²ââæVçG'’ÂÆ–W$–C¢VæFVf–æVBÒ’Ò“°¢6öç7BÆFW7BÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Â¶W’ÒG¶VçG'’æ–GÓ¢G¶VçG'’æf–æ—6†VDBòvf–æ—6‚r¢w7F'BwÖÂVæF–æu6W76–öç2Ò†ÆFW7Bç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâG¶—FVÒæ–GÓ¢G¶—FVÒæf–æ—6†VDBòvf–æ—6‚r¢w7F'BwÖÓÒ¶W’“°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæÆFW7BÂ6W'fW%7–æ3¢²âââ†ÆFW7Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æu6W76–öç2ÂVæF–æs¢VæF–æu6W76–öç2æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢Ð¢6öç7B&W7VÇG2Ò²âââ‡F†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ç6W'fW%7–æ3òçVæF–ætvÖU&W7VÇG2ÇÂµÒ•Ó°¢f÷"†6öç7BVçG'’öb&W7VÇG2’°¢6öç7B–ÆöBÒv—BF†—2ç7V&Ö—DvÖU&W7VÇB†VçG'’“°¢–b‚–ÆöB’6öçF–çVS°¢6öç7BÆFW7BÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂVæF–ætvÖU&W7VÇG2Ò†ÆFW7Bç6W'fW%7–æ3òçVæF–ætvÖU&W7VÇG2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒç6W76–öä–BÓÒVçG'’ç6W76–öä–B“°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæÆFW7BÂ6W'fW%7–æ3¢²âââ†ÆFW7Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–ætvÖU&W7VÇG2ÂVæF–æs¢VæF–ætvÖU&W7VÇG2æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æÆVæwF‚âÇÂ†ÆFW7Bç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢Ð¢Ð¢7–æ2VÆÄ7W'&VçEÆ–W"‚’²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æÖRÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â–ÆöCòçÆ–W"ÇÂçVÆÃ²Ð¢7–æ27&VFT7W'&VçEÆ–W"‚’°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æÖRÂ²ÖWF†öC¢uõ5BrÂ&öG“¢w·ÒrÒ“°¢–b‚–ÆöCòçÆ–W"’F‡&÷ræWr&÷f–FW$W'&÷"‚wÆ–W%ö7&VFUöf–ÆVBrÂ²W6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢v&6¶VæEöW'&÷"rÒ’Ò“°¢F†—2æ7F—fRÒG'VS²&WGW&âF†—2æ‡–G&FR‡–ÆöBçÆ–W"ÂF†—2ævWD7W'&VçEÆ–W%7–æ2‚’“°¢Ð¢7–æ2–×÷'DÆö6ÅÆ–W"‡6æ6†÷BÒF†—2æ–æ—F–ÄÆö6Å6æ6†÷B’°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æÖT–×÷'BÇÂr÷Æ–W'2öÖRö–×÷'BrÂ²ÖWF†öC¢uõ5BrÂ&öG“¢¥4ôâç7G&–æv–g’‡²Ö–w&F–öä–C¢–B‚vÆö6ÂÖÖ–w&F–öâr’ÂÖ–w&F–öåfW'6–öã¢vÆö6Â×crÂ6æ6†÷C¢ÖöFVÂ‚’çFõ&V6÷&B‡6æ6†÷B’Ò’Ò“°¢–b‚–ÆöCòçÆ–W"’F‡&÷ræWr&÷f–FW$W'&÷"‚wÆ–W%ö–×÷'Eöf–ÆVBrÂ²W6W$ÖW76vS¢}	ÝR=M½íÂ}==}-ÂýíM½Ââ	ýí--íý]ÂýíM­½í}]Ý^(
+brÂ&WG'–&ÆS¢G'VRÒ“°¢F†—2æ7F—fRÒG'VS²&WGW&â²6æ6†÷C¢F†—2æ‡–G&FR‡–ÆöBçÆ–W"Â=yÒÚ$z{-®éÜj×—FW2‚“°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æÖU7FFRÇÂr÷Æ–W'2öÖR÷7FFRrÂ²ÖWF†öC¢uUBrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢–B‚w7–æ2r’ÒÂ&öG“¢¥4ôâç7G&–æv–g’†ÖöFVÂ‚’çFõ&V6÷&B‡6æ6†÷B’’Ò“°¢6öç7B6fVBÒ–ÆöCòçÆ–W"òF†—2æ‡–G&FR‡–ÆöBçÆ–W"Â6æ6†÷B’¢F†—2æÆö6Âç6fUÆ–W"‡²ââç6æ6†÷BÂ6W'fW%7–æ3¢²VæF–æs¢fÇ6RÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“°¢æ÷F–g•7FFR‡²†6S¢vöæÆ–æRrÂ7F—fTÖöFS¢v&6¶VæBrÂ†VÇF‡“¢G'VRÂfÆÆ&6³¢fÇ6RÂÖW76vS¢rrÂÆ7DW'&÷#¢çVÆÂÒ“°¢&WGW&â6fVC°¢Ò6F6‚†W'&÷"’°¢F†—2æÆö6Âç6fUÆ–W"‡²ââç6æ6†÷BÂ6W'fW%7–æ3¢²VæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÂW'&÷#¢W'&÷"æ6öFRÇÂw7–æ5öf–ÆVBrÒÒ“°¢æ÷F–g•7FFR‡²†6S¢vFVw&FVBrÂ7F—fTÖöFS¢v&6¶VæBrÂ†VÇF‡“¢fÇ6RÂfÆÆ&6³¢G'VRÂÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢w7–æ5öf–ÆVBrÒ’ÂÆ7DW'&÷#¢W'&÷"æ6öFRÇÂw7–æ5öf–ÆVBrÒ“°¢&WGW&âçVÆÃ°¢Ð¢Ð¢VWVU7FFU7–æ2‡6æ6†÷B’²6ÆV%F–ÖV÷WB‡F†—2ç7–æ5F–ÖW"“²F†—2ç7–æ5F–ÖW"Ò6WEF–ÖV÷WB‚‚’Óâ²F†—2çW6…7FFR‡6æ6†÷B’æ6F6‚‚‚’Óâ·Ò“²ÒÂçVÖ&W"†6öæf–r‚’ç7–æ4FV&÷Væ6T×2ÇÂ3S’“²Ð¢7–æ2–æ—F–Æ—¦R‚’°¢v—BF†—2æ†VÇF„6†V6²‚“°¢6öç7B–FVçF—G’Ò6÷&R‚’åFVÆVw&ÔWFƒòæ–FVçF—G“òâ‚’ÇÂ·Ó°¢–b‚–FVçF—G’æWF†VçF–6FVBÇÂ–FVçF—G’çFVÆVw&Ô–B’F‡&÷ræWr&÷f–FW$W'&÷"‚wFVÆVw&ÕöWF…÷&WV—&VBrÂ²7FGW3¢CÂW6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢wFVÆVw&ÕöWF…÷&WV—&VBrÒ’Ò“°¢G'’°¢6öç7B&VÖ÷FRÒv—BF†—2çVÆÄ7W'&VçEÆ–W"‚“°¢F†—2æ7F—fRÒG'VS°¢–b‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚“òç6W'fW%7–æ3òçVæF–ær’&WGW&â²7FGW3¢vöæÆ–æRrÂ6æ6†÷C¢v—BF†—2çW6…7FFR‡F†—2ævWD7W'&VçEÆ–W%7–æ2‚’’Â&W7F÷&VEVæF–æs¢G'VRÓ°¢–b††4ÖVæ–ævgVÄÆö6ÄFF‡F†—2æ–æ—F–ÄÆö6Å6æ6†÷B’’°¢6öç7BÖ–w&FVBÒv—BF†—2æ–×÷'DÆö6ÅÆ–W"‡F†—2æ–æ—F–ÄÆö6Å6æ6†÷B“°¢&WGW&â²7FGW3¢vöæÆ–æRrÂ6æ6†÷C¢Ö–w&FVBç6æ6†÷BÂÖ–w&FVC¢Ö–w&FVBæ–×÷'FVBÓ°¢Ð¢&WGW&â²7FGW3¢vöæÆ–æRrÂ6æ6†÷C¢F†—2æ‡–G&FR‡&VÖ÷FRÂF†—2ævWD7W'&VçEÆ–W%7–æ2‚’’Ó°¢Ò6F6‚†W'&÷"’°¢–b†W'&÷"ç7FGW2ÓÒCBbbW'&÷"æ6öFRÓÒwÆ–W%öæ÷Eöf÷VæBr’F‡&÷rW'&÷#°¢6öç7B7&VFVBÒv—BF†—2æ7&VFT7W'&VçEÆ–W"‚“°¢–b††4ÖVæ–ævgVÄÆö6ÄFF‡F†—2æ–æ—F–ÄÆö6Å6æ6†÷B’’°¢6öç7BÖ–w&FVBÒv—BF†—2æ–×÷'DÆö6ÅÆ–W"‡F†—2æ–æ—F–ÄÆö6Å6æ6†÷B“°¢&WGW&â²7FGW3¢vöæÆ–æRrÂ6æ6†÷C¢Ö–w&FVBç6æ6†÷BÂ7&VFVC¢G'VRÂÖ–w&FVC¢Ö–w&FVBæ–×÷'FVBÓ°¢Ð¢&WGW&â²7FGW3¢vöæÆ–æRrÂ6æ6†÷C¢7&VFVBÂ7&VFVC¢G'VRÂÖ–w&FVC¢fÇ6RÓ°¢Ð¢Ð¢7–æ27–æ47W'&VçEÆ–W"‚’²6öç7B&VÖ÷FRÒv—BF†—2çVÆÄ7W'&VçEÆ–W"‚“²F†—2æ7F—fRÒG'VS²&WGW&âF†—2æ‡–G&FR‡&VÖ÷FRÂF†—2ævWD7W'&VçEÆ–W%7–æ2‚’“²Ð¢7–æ2&VÖ÷FT÷$fÆÆ&6²†7F–öâÂfÆÆ&6²Â÷F–öç2Ò·Ò’²–b‚F†—2æ7F—fRbb÷F–öç2ç7G&–7B’&WGW&âfÆÆ&6²‚“²G'’²&WGW&âv—B7F–öâ‚“²Ò6F6‚†W'&÷"’²–b†÷F–öç2ç7G&–7B’F‡&÷rW'&÷#²&WGW&âfÆÆ&6²‚“²ÒÐ¢Æ—7EÆ–W'2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2çÆ–W'7ÒG·VW'•7G&–ær‡²¢÷F–öç2çVW'’Â6÷'C¢÷F–öç2ç6÷'BÂf–ÇFW#¢÷F–öç2æf–ÇFW"Ò—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â„'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòçÆ–W'2ÇÂµÒ’æÖ‡fÇVRÓâÖöFVÂ‚’çFõ&V6÷&B†ÖöFVÂ‚’æg&öÕ&V6÷&B‡fÇVRÂ·Ò’’“²ÒÂ‚’ÓâF†—2æÆö6ÂæÆ—7EÆ–W'2†÷F–öç2’Â÷F–öç2“²Ð¢vWEÆ–W"‡Æ–W$–BÂ÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2çÆ–W'7ÒòG¶Væ6öFUU$”6ö×öæVçB‡Æ–W$–B—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â–ÆöCòçÆ–W"ÇÂ–ÆöBÇÂçVÆÃ²ÒÂ‚’ÓâF†—2æÆö6ÂævWEÆ–W"‡Æ–W$–B’Â÷F–öç2“²Ð¢vWEG&ç67F–öç2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2çG&ç67F–öç7ÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÒ—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòçG&ç67F–öç2ÇÂµÓ²ÒÂ‚’ÓâF†—2æÆö6ÂævWEG&ç67F–öç2†÷F–öç2’Â÷F–öç2“²Ð¢vWDæÇ—F–74WfVçG2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2ææÇ—F–77ÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÒ—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòæWfVçG2ÇÂµÓ²ÒÂ‚’ÓâF†—2æÆö6ÂævWDæÇ—F–74WfVçG2†÷F–öç2’Â÷F–öç2“²Ð¢vWDFÖ–ä7F–öç2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2æFÖ–ä7F–öç7ÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÒ—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòæ7F–öç2ÇÂµÓ²ÒÂ‚’ÓâF†—2æÆö6ÂævWDFÖ–ä7F–öç2†÷F–öç2’Â÷F–öç2“²Ð¢vWE&Wv&E&öög2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2ç&Wv&E&öög2ÇÂr÷&Wv&B×&öög2wÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÂ7FGW3¢÷F–öç2ç7FGW2Ò—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòç&öög2ÇÂµÓ²ÒÂ‚’ÓâµÒÂ÷F–öç2“²Ð¢vWDvÖU&W7VÇG2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2ævÖU&W7VÇG4FÖ–âÇÂrövÖR×&W7VÇG2wÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÂfÆ–FFVC¢÷F–öç2çfÆ–FFVBÒ—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòç&W7VÇG2ÇÂµÓ²ÒÂ‚’ÓâµÒÂ÷F–öç2“²Ð¢vWDg&VDWfVçG2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&VÖ÷FT÷$fÆÆ&6²†7–æ2‚’Óâ²6öç7B–ÆöBÒv—BF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2æg&VDWfVçG2ÇÂrög&VBÖWfVçG2wÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÒ—ÖÂ²ÖWF†öC¢ttUBrÒ“²&WGW&â'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòæWfVçG2ÇÂµÓ²ÒÂ‚’ÓâµÒÂ÷F–öç2“²Ð¢vWE–ÖVçE6¶vW2‚’²&WGW&âF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ç–ÖVçE6¶vW2ÇÂr÷–ÖVçG2÷6¶vW2rÂ²ÖWF†öC¢ttUBrÒ’çF†Vâ‡–ÆöBÓâ'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòç6¶vW2ÇÂµÒ“²Ð¢7&VFU–ÖVçD–çfö–6R‡6¶vT–BÂ–FV×÷FVæ7”¶W’’²&WGW&âF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ç–ÖVçD–çfö–6RÇÂr÷–ÖVçG2ö–çfö–6RrÂ²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†–FV×÷FVæ7”¶W’ÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’‡²6¶vT–BÒ’Ò“²Ð¢vWE–ÖVçG2†÷F–öç2Ò·Ò’²&WGW&âF†—2ç&WVW7B†G¶6öæf–r‚’æVæGö–çG2ç–ÖVçG2ÇÂr÷–ÖVçG2wÒG·VW'•7G&–ær‡²Æ–W$–C¢÷F–öç2çÆ–W$–BÂ7FGW3¢÷F–öç2ç7FGW2Ò—ÖÂ²ÖWF†öC¢ttUBrÒ’çF†Vâ‡–ÆöBÓâ'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòç–ÖVçG2ÇÂµÒ“²Ð¢vWD×•–ÖVçG2‚’²&WGW&âF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æ×•–ÖVçG2ÇÂr÷–ÖVçG2öÖRrÂ²ÖWF†öC¢ttUBrÒ’çF†Vâ‡–ÆöBÓâ'&’æ—4'&’‡–ÆöB’ò–ÆöB¢–ÆöCòç–ÖVçG2ÇÂµÒ“²Ð¢&V6÷&EG&ç67F–öâ†VçG'’’°¢–b‚F†—2æ7F—fR’&WGW&â&öÖ—6Rç&W6öÇfR†çVÆÂ“°¢6öç7B&öG’ÒF†—2çG&ç67F–öä&öG’†VçG'’“°¢6öç7B6VæBÒ7–æ2‚’Óâ°¢G'’°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2çG&ç67F–öç2Â²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†&öG’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’†&öG’’Ò“°¢–b‡–ÆöCòæ&Ææ6RÒçVÆÂ’²6öç7B7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Â7W'&Væ7’Ò&öG’æ7W'&Væ7•G—RÓÓÒvvV×2ròvvV×2r¢v6ö–ç2rÂVæF–æuG&ç67F–öç2Ò†7W'&VçBç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B“²F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ¶7W'&Væ7•Ó¢çVÖ&W"‡–ÆöBæ&Ææ6R’Â6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç2ÂVæF–æs¢VæF–æuG&ç67F–öç2æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÒÒ“²Ð¢&WGW&â–ÆöC°¢Ò6F6‚†W'&÷"’°¢6öç7B7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚“°¢–b‡F†—2çW&ÖæVçEG&ç67F–öäW'&÷"†W'&÷"’’°¢6öç7BVæF–æuG&ç67F–öç2Ò†7W'&VçBç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B“°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç2ÂVæF–æs¢VæF–æuG&ç67F–öç2æÆVæwF‚âÇÂ†7W'&VçBç6W'fW%7–æ3òçVæF–ætæÇ—F–72ÇÂµÒ’æÆVæwF‚âÇÂ†7W'&VçBç6W'fW%7–æ3òçVæF–æu6W76–öç2ÇÂµÒ’æÆVæwF‚âÂ7–æ6VDC¢FFRææ÷r‚’ÂÆ7E&V¦V7FVEG&ç67F–öã¢W'&÷"æ6öFRÒÒ“°¢&WGW&âçVÆÃ°¢Ð¢6öç7BVæF–æuG&ç67F–öç2Ò²âââ†7W'&VçBç6W'fW%7–æ3òçVæF–æuG&ç67F–öç2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒæ–BÓÒ&öG’æ–B’Â&öG•Ó°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æuG&ç67F–öç2ÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÂW'&÷#¢W'&÷"æ6öFRÇÂw7–æ5öf–ÆVBrÒÒ“°¢æ÷F–g•7FFR‡²†6S¢vFVw&FVBrÂ†VÇF‡“¢fÇ6RÂfÆÆ&6³¢G'VRÂÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢w7–æ5öf–ÆVBrÒ’ÂÆ7DW'&÷#¢W'&÷"æ6öFRÒ“°¢&WGW&âçVÆÃ°¢Ð¢Ó°¢F†—2æ7W'&Væ7•VWVRÒF†—2æ7W'&Væ7•VWVRçF†Vâ‡6VæBÂ6VæB“°¢&WGW&âF†—2æ7W'&Væ7•VWVS°¢Ð¢7–æ2&V6÷&DvÖU6W76–öâ†VçG'’’²–b‚F†—2æ7F—fR’&WGW&âF†—2çVWVTöffÆ–æU6W76–öâ†VçG'’“²G'’²&WGW&âv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ævÖU6W76–öç2ÇÂrövÖR×6W76–öç2rÂ²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†VçG'’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’‡²ââæVçG'’ÂÆ–W$–C¢VæFVf–æVBÒ’Ò“²Ò6F6‚…ò’²&WGW&âF†—2çVWVTöffÆ–æU6W76–öâ†VçG'’“²ÒÐ¢7–æ27V&Ö—DvÖU&W7VÇB†VçG'’’°¢–b‚F†—2æ7F—fR’&WGW&âçVÆÃ°¢6öç7B&öG’Ò²vÖT–C¢VçG'’ævÖT–BÂ6W76–öä–C¢VçG'’ç6W76–öä–BÂ66÷&S¢çVÖ&W"†VçG'’ç66÷&RÇÂ’ÂGW&F–öã¢çVÖ&W"†VçG'’æGW&F–öâÇÂ’ÂÖWFFF¢6ÆöæR†VçG'’æÖWFFFÇÂVçG'’ç&W7VÇBÇÂ·Ò’ÂF–ÖW7F×¢çVÖ&W"†VçG'’çF–ÖW7F×ÇÂFFRææ÷r‚’’Ó°¢G'’°¢6öç7B–ÆöBÒv—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ævÖU&W7VÇG2ÇÂrövÖW2÷&W7VÇBrÂ²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢&Wv&C¢G¶&öG’ç6W76–öä–GÖÒÂ&öG“¢¥4ôâç7G&–æv–g’†&öG’’Ò“°¢–b‡–ÆöCòçÆ–W"’F†—2æ‡–G&FR‡–ÆöBçÆ–W"ÂF†—2ævWD7W'&VçEÆ–W%7–æ2‚’“°¢–b‡–ÆöCòç&Wv&E&ööb’6÷&R‚’å&Wv&DÖævW#òæv&Còâ†VçG'’ævÖT–BÂ²&Wv&E&ööc¢–ÆöBç&Wv&E&ööbÒ“°¢&WGW&â–ÆöC°¢Ò6F6‚†W'&÷"’°¢–b†W'&÷#òæ6öFRÓÓÒw&W7VÇE÷&V¦V7FVBrÇÂW'&÷#òç7FGW2ÓÓÒC#"ÇÂW'&÷#òæ6öFRÓÓÒw6W76–öåöf÷&&–FFVârÇÂW'&÷#òæ6öFRÓÓÒw&W7VÇE÷6W76–öåöÖ—6ÖF6‚r’°¢G'’²v–æF÷ræF—7F6„WfVçB†æWr7W7FöÔWfVçB‚wFVÆWÆ“§&Wv&B×&V¦V7FVBrÂ²FWF–Ã¢²ââæ&öG’Â6öFS¢W'&÷"æ6öFRÒÒ’“²Ò6F6‚…ò’·Ð¢&WGW&âçVÆÃ°¢Ð¢6öç7B7W'&VçBÒF†—2æÆö6ÂævWD7W'&VçEÆ–W%7–æ2‚’ÂVæF–ærÒ²âââ†7W'&VçBç6W'fW%7–æ3òçVæF–ætvÖU&W7VÇG2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒç6W76–öä–BÓÒ&öG’ç6W76–öä–B’Â&öG•Ó°¢F†—2æÆö6Âç6fUÆ–W"‡²ââæ7W'&VçBÂ6W'fW%7–æ3¢²âââ†7W'&VçBç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–ætvÖU&W7VÇG3¢VæF–ærÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÂW'&÷#¢W'&÷"æ6öFRÇÂw&Wv&E÷7–æ5öf–ÆVBrÒÒ“°¢æ÷F–g•7FFR‡²†6S¢vFVw&FVBrÂ†VÇF‡“¢fÇ6RÂfÆÆ&6³¢G'VRÂÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢w7–æ5öf–ÆVBrÒ’ÂÆ7DW'&÷#¢W'&÷"æ6öFRÇÂw&Wv&E÷7–æ5öf–ÆVBrÒ“°¢&WGW&âçVÆÃ°¢Ð¢Ð¢vWDæÇ—F–74WfVçG57–æ2‚’²&WGW&âF†—2æÆö6ÂævWDæÇ—F–74WfVçG57–æ2‚“²Ð¢vWDFÖ–ä7F–öç57–æ2‚’²&WGW&âF†—2æÆö6ÂævWDFÖ–ä7F–öç57–æ2‚“²Ð¢7–æ2÷7DFÖ–ä7F–öâ†VçG'’’²6öç7BÆö6ÂÒF†—2æÆö6Âç&V6÷&DFÖ–ä7F–öâ†VçG'’“²–b‚F†—2æ7F—fR’&WGW&âçVÆÃ²&WGW&âF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2æFÖ–ä7F–öç2Â²ÖWF†öC¢uõ5BrÂ&öG“¢¥4ôâç7G&–æv–g’‡²ââæVçG'’ÂFÖ–ä–C¢6÷&R‚’åFVÆVw&ÔWFƒòæ–FVçF—G“òâ‚’çFVÆVw&Ô–BÇÂVçG'’æFÖ–ä–BÒ’Ò“²Ð¢7–æ2÷7DæÇ—F–74WfVçB†VçG'’’²6öç7BÆö6ÂÒF†—2æÆö6Âç&V6÷&DæÇ—F–74WfVçB†VçG'’“²–b‚F†—2æ7F—fR’&WGW&âÆö6Ã²G'’²v—BF†—2ç&WVW7B†6öæf–r‚’æVæGö–çG2ææÇ—F–72Â²ÖWF†öC¢uõ5BrÂ†VFW'3¢²u‚Ô–FV×÷FVæ7’Ô¶W’s¢7G&–ær†VçG'’æ–BÇÂrr’ÒÂ&öG“¢¥4ôâç7G&–æv–g’‡²ââæVçG'’ÂÆ–W$–C¢VæFVf–æVBÒ’Ò“²Ò6F6‚…ò’²F†—2çVWVTöffÆ–æTæÇ—F–72†VçG'’ÂfÇ6R“²Ò&WGW&âÆö6Ã²Ð¢&V6÷&DæÇ—F–74WfVçB†VçG'’’²F†—2ç÷7DæÇ—F–74WfVçB†VçG'’’æ6F6‚‚‚’Óâ·Ò“²&WGW&âVçG'“²Ð¢&V6÷&DFÖ–ä7F–öâ†VçG'’’²F†—2ç÷7DFÖ–ä7F–öâ†VçG'’’æ6F6‚‚‚’Óâ·Ò“²&WGW&âVçG'“²Ð¢Ð ¢6öç7BÆö6ÂÒæWrÆö6Å7F÷&vU&÷f–FW"‚’Â&6¶VæBÒæWr&6¶VæE&÷f–FW"†Æö6Â’Â6öæf–wW&VD&6¶VæBÒ6öæf–r‚’æÖöFRÓÓÒv&6¶VæBs°¢7F—fU&÷f–FW"ÒÆö6Ã°¢7FFRÒ²6öæf–wW&VDÖöFS¢6öæf–r‚’æÖöFRÂ7F—fTÖöFS¢vÆö6ÂrÂ†6S¢v–FÆRrÂ†VÇF‡“¢fÇ6RÂfÆÆ&6³¢fÇ6RÂÖW76vS¢rrÂÆ7DW'&÷#¢çVÆÂÂWFFVDC¢FFRææ÷r‚’Ó°¢òòFÖ–æ—7G&F—fR&VG2×W7BæWfW"&R6–ÆVçFÇ’7V'7F—GWFVBv—F‚F†R÷væW"w0¢òòÆö6Â6fRâ6öæf–wW&VB&6¶VæB6â&R&WG&–VBF—&V7FÇ’v—F‚7G&–7F ¢òòWfVâ–bF†RvÖWÆ’&÷f–FW"—2FV×÷&&–Ç’–â—G2w&6VgVÂfÆÆ&6²à¢6öç7B&VE&÷f–FW"Ò‚’Óâ6öæf–wW&VD&6¶VæBò&6¶VæB¢7F—fU&÷f–FW#°¢6öç7B7F—fFT&6¶VæBÒF6‚Óâ²7F—fU&÷f–FW"Ò&6¶VæC²&6¶VæBæ7F—fRÒG'VS²æ÷F–g•7FFR‡²7F—fTÖöFS¢v&6¶VæBrÂ†6S¢vöæÆ–æRrÂ†VÇF‡“¢G'VRÂfÆÆ&6³¢fÇ6RÂÖW76vS¢rrÂÆ7DW'&÷#¢çVÆÂÂââçF6‚Ò“²Ó°¢6öç7B7F—fFTfÆÆ&6²Ò†W'&÷"Â†6RÒvöffÆ–æRr’Óâ²7F—fU&÷f–FW"ÒÆö6Ã²&6¶VæBæ7F—fRÒfÇ6S²&WGW&âæ÷F–g•7FFR‡²7F—fTÖöFS¢vÆö6ÂrÂ†6RÂ†VÇF‡“¢fÇ6RÂfÆÆ&6³¢6öæf–wW&VD&6¶VæBÂÖW76vS¢W'&÷#òçW6W$ÖW76vRÇÂg&–VæFÇ”W'&÷"†W'&÷"ÇÂ·Ò’ÂÆ7DW'&÷#¢W'&÷#òæ6öFRÇÂW'&÷#òæÖW76vRÇÂv&6¶VæE÷Væf–Æ&ÆRrÒ“²Ó° ¢6öç7BFF&÷f–FW"Ò°¢vWB&÷f–FW"‚’²&WGW&â7F—fU&÷f–FW#²ÒÀ¢ÖöFS¢6öæf–r‚’æÖöFRÀ¢6öæf–wW&VDÖöFS¢6öæf–r‚’æÖöFRÀ¢—4&6¶VæDVæ&ÆVC¢‚’Óâ6öæf–wW&VD&6¶VæBÀ¢—4&6¶VæD7F—fS¢‚’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBbb&6¶VæBæ7F—fRÀ¢7FGW3¢‚’Óâ6ÆöæR‡7FFR’À¢7–æ2–æ—F–Æ—¦R‚’°¢æ÷F–g•7FFR‡²†6S¢v6†V6¶–ærrÂÖW76vS¢rrÂÆ7DW'&÷#¢çVÆÂÒ“°¢–b‚6öæf–wW&VD&6¶VæB’²7F—fU&÷f–FW"ÒÆö6Ã²æ÷F–g•7FFR‡²†6S¢w&VG’rÂ7F—fTÖöFS¢vÆö6ÂrÂ†VÇF‡“¢G'VRÂfÆÆ&6³¢fÇ6RÒ“²&WGW&â²7FGW3¢vÆö6ÂrÂ6æ6†÷C¢Æö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Ó²Ð¢–b‚6öæf–r‚’æ&6¶VæEW&Â’²6öç7BW'&÷"ÒæWr&÷f–FW$W'&÷"‚v&6¶VæE÷W&ÅöÖ—76–ærrÂ²W6W$ÖW76vS¢g&–VæFÇ”W'&÷"‡²6öFS¢v&6¶VæE÷W&ÅöÖ—76–ærrÒ’Ò“²7F—fFTfÆÆ&6²†W'&÷"ÂvÖ—66öæf–wW&VBr“²&WGW&â²7FGW3¢vfÆÆ&6²rÂW'&÷"Â6æ6†÷C¢Æö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Ó²Ð¢G'’°¢6öç7B&W7VÇBÒv—B&6¶VæBæ–æ—F–Æ—¦R‚“°¢7F—fFT&6¶VæB‚“²&WGW&â&W7VÇC°¢Ò6F6‚†W'&÷"’°¢7F—fFTfÆÆ&6²†W'&÷"“°¢–b‚6öæf–r‚’æÆÆ÷tÆö6ÄfÆÆ&6²’F‡&÷rW'&÷#°¢&WGW&â²7FGW3¢vfÆÆ&6²rÂW'&÷"Â6æ6†÷C¢Æö6ÂævWD7W'&VçEÆ–W%7–æ2‚’Ó°¢Ð¢ÒÀ¢7–æ2–×÷'DÆö6ÅÆ–W"‚’²G'’²6öç7B&W7VÇBÒv—B&6¶VæBæ–×÷'DÆö6ÅÆ–W"‚“²7F—fFT&6¶VæB‡²–×÷'FVC¢G'VRÒ“²&WGW&â²ö³¢G'VRÂââç&W7VÇBÓ²Ò6F6‚†W'&÷"’²7F—fFTfÆÆ&6²†W'&÷"ÂvÖ–w&F–öåöf–ÆVBr“²&WGW&â²ö³¢fÇ6RÂW'&÷"Ó²ÒÒÀ¢7–æ27&VFU&VÖ÷FUÆ–W"‚’²G'’²6öç7B6æ6†÷BÒv—B&6¶VæBæ7&VFT7W'&VçEÆ–W"‚“²7F—fFT&6¶VæB‡²7&VFVC¢G'VRÒ“²&WGW&â²ö³¢G'VRÂ6æ6†÷BÓ²Ò6F6‚†W'&÷"’²7F—fFTfÆÆ&6²†W'&÷"“²&WGW&â²ö³¢fÇ6RÂW'&÷"Ó²ÒÒÀ¢6öçF–çVTÆö6Â‚’²&WGW&â7F—fFTfÆÆ&6²†æWr&÷f–FW$W'&÷"‚vÖ–w&F–öåöFVfW'&VBrÂ²W6W$ÖW76vS¢}
+]-]Ý½’Íýí"í-½ím]Òâ	ýí=]í]Ýý]-òÝ=-í--RârÒ’ÂvÆö6ÅööæÇ’r“²ÒÀ¢7–æ2&WG'’‚’²&WGW&âF†—2æ–æ—F–Æ—¦R‚“²ÒÀ¢†VÇF„6†V6³¢‚’Óâ&6¶VæBæ†VÇF„6†V6²‚’À¢vWD7W'&VçEÆ–W%7–æ3¢‚’Óâ7F—fU&÷f–FW"ævWD7W'&VçEÆ–W%7–æ2‚’À¢6fUÆ–W#¢6æ6†÷BÓâ°¢–b†7F—fU&÷f–FW"ÓÓÒ&6¶VæB’&WGW&â&6¶VæBç6fUÆ–W"‡6æ6†÷B“°¢–b‚6öæf–wW&VD&6¶VæB’&WGW&âÆö6Âç6fUÆ–W"‡6æ6†÷B“°¢&WGW&âÆö6Âç6fUÆ–W"‡²ââç6æ6†÷BÂ6W'fW%7–æ3¢²âââ‡6æ6†÷Bç6W'fW%7–æ2ÇÂ·Ò’ÂVæF–æs¢G'VRÂWFFVDC¢FFRææ÷r‚’ÒÒ“°¢ÒÀ¢7–æ47W'&VçEÆ–W#¢‚’Óâ7F—fU&÷f–FW"ç7–æ47W'&VçEÆ–W"‚’À¢Æ—7EÆ–W'3¢÷F–öç2Óâ&VE&÷f–FW"‚’æÆ—7EÆ–W'2†÷F–öç2’À¢vWEÆ–W#¢‡Æ–W$–BÂ÷F–öç2’Óâ&VE&÷f–FW"‚’ævWEÆ–W"‡Æ–W$–BÂ÷F–öç2’À¢vWEG&ç67F–öç3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWEG&ç67F–öç2†÷F–öç2’À¢vWDæÇ—F–74WfVçG3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWDæÇ—F–74WfVçG2†÷F–öç2’À¢vWDFÖ–ä7F–öç3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWDFÖ–ä7F–öç2†÷F–öç2’À¢vWE&Wv&E&öög3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWE&Wv&E&öög2†÷F–öç2’À¢vWDvÖU&W7VÇG3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWDvÖU&W7VÇG2†÷F–öç2’À¢vWDg&VDWfVçG3¢÷F–öç2Óâ&VE&÷f–FW"‚’ævWDg&VDWfVçG2†÷F–öç2’À¢vWE–ÖVçE6¶vW3¢‚’Óâ&6¶VæBævWE–ÖVçE6¶vW2‚’À¢7&VFU–ÖVçD–çfö–6S¢‡6¶vT–BÂ–FV×÷FVæ7”¶W’’Óâ&6¶VæBæ7&VFU–ÖVçD–çfö–6R‡6¶vT–BÂ–FV×÷FVæ7”¶W’’À¢vWE–ÖVçG3¢÷F–öç2Óâ&6¶VæBævWE–ÖVçG2‡²âââ†÷F–öç2ÇÂ·Ò’Â7G&–7C¢G'VRÒ’À¢vWD×•–ÖVçG3¢‚’Óâ&6¶VæBævWD×•–ÖVçG2‚’À¢vWDæÇ—F–74WfVçG57–æ3¢‚’Óâ7F—fU&÷f–FW"ævWDæÇ—F–74WfVçG57–æ2‚’À¢vWDFÖ–ä7F–öç57–æ3¢‚’Óâ7F—fU&÷f–FW"ævWDFÖ–ä7F–öç57–æ2‚’À¢&V6÷&DæÇ—F–74WfVçC¢VçG'’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBò&6¶VæBç&V6÷&DæÇ—F–74WfVçB†VçG'’’¢†6öæf–wW&VD&6¶VæBò&6¶VæBçVWVTöffÆ–æTæÇ—F–72†VçG'’’¢Æö6Âç&V6÷&DæÇ—F–74WfVçB†VçG'’’’À¢&V6÷&DFÖ–ä7F–öã¢VçG'’Óâ7F—fU&÷f–FW"ç&V6÷&DFÖ–ä7F–öâ†VçG'’’À¢÷7DFÖ–ä7F–öã¢VçG'’Óâ7F—fU&÷f–FW"ç÷7DFÖ–ä7F–öâ†VçG'’’À¢÷7DæÇ—F–74WfVçC¢VçG'’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBò&6¶VæBç÷7DæÇ—F–74WfVçB†VçG'’’¢†6öæf–wW&VD&6¶VæBò&öÖ—6Rç&W6öÇfR†&6¶VæBçVWVTöffÆ–æTæÇ—F–72†VçG'’’’¢Æö6Âç÷7DæÇ—F–74WfVçB†VçG'’’’À¢&V6÷&EG&ç67F–öã¢VçG'’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBò&6¶VæBç&V6÷&EG&ç67F–öâ†VçG'’’¢†6öæf–wW&VD&6¶VæBò&öÖ—6Rç&W6öÇfR†&6¶VæBçVWVTöffÆ–æUG&ç67F–öâ†VçG'’’’¢VæFVf–æVB’À¢&V6÷&DvÖU6W76–öã¢VçG'’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBò&6¶VæBç&V6÷&DvÖU6W76–öâ†VçG'’’¢†6öæf–wW&VD&6¶VæBò&öÖ—6Rç&W6öÇfR†&6¶VæBçVWVTöffÆ–æU6W76–öâ†VçG'’’’¢VæFVf–æVB’À¢7V&Ö—DvÖU&W7VÇC¢VçG'’Óâ7F—fU&÷f–FW"ÓÓÒ&6¶VæBò&6¶VæBç7V&Ö—DvÖU&W7VÇB†VçG'’’¢VæFVf–æVBÀ¢FF&6U66†VÖ¢‚’Óâv–æF÷råFVÆUÆ”FFÖöFVÃòç66†VÖÇÂ·ÒÀ¢Ö–w&F–öå7VÖÖ'“¢‚’ÓâÖ–w&F–öå7VÖÖ'’†&6¶VæBæ–æ—F–ÄÆö6Å6æ6†÷B¢Ó°¢v–æF÷råFVÆUÆ•&÷f–FW'2Ò²Æö6Å7F÷&vU&÷f–FW"Â&6¶VæE&÷f–FW"Â&÷f–FW$W'&÷"Ó°¢v–æF÷råFVÆUÆ”6÷&RóóÒ·Ó°¢v–æF÷råFVÆUÆ”6÷&RäFF&÷f–FW"ÒFF&÷f–FW#°¢v–æF÷råFVÆUÆ”FF&÷f–FW"ÒFF&÷f–FW#°§Ò’‚“°

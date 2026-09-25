@@ -10,7 +10,7 @@
   const denied = () => { const host = root(); if (!host) return; host.innerHTML = `<div class="admin-denied"><span>⛔</span><h2>Access Denied</h2><p>Этот раздел доступен только владельцу TelePlay.</p><button class="play-button" type="button" id="adminDeniedBack">На главную</button></div>`; host.querySelector('#adminDeniedBack').onclick = () => closeHandler?.(); };
   const renderContent = () => {
     const host = document.getElementById('adminContent'); if (!host || !auth()?.isOwner?.()) return;
-    if (activeTab === 'dashboard') host.innerHTML = view().dashboard(data().dashboard());
+    if (activeTab === 'dashboard') host.innerHTML = view().dashboard(data().dashboard(), data().analytics?.());
     if (activeTab === 'players') { const selected = selectedPlayerId ? data().selectedPlayer?.(selectedPlayerId) : null; host.innerHTML = view().players(data().playerRows(query, filters), { query, ...filters, player: selected, globalStatus: data().globalStatus?.() }); }
     if (activeTab === 'economy') host.innerHTML = view().economy(data().economy());
     if (activeTab === 'shop') host.innerHTML = view().shop(data().shop());

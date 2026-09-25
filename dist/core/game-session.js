@@ -1,14 +1,26 @@
 (() => {
-  const sessions = new Map(), active = new Set(), remoteSessions = new Map(), core = () => window.TelePlayCore;
-  function recordRemoteSession(event, gameId, params = {}) {
+  const sessions = new Map(), active = new Set(), productSessions = new Map(), core = () => window.TelePlayCore;
+  const sessionId = gameId => `session:${gameId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+  function lifecycle(event, gameId) {
+    if (!gameId || (event !== 'game_started' && event !== 'game_finished')) return null;
+    if (event === 'game_started') {
+      const existing = productSessions.get(gameId);
+      if (existing) return existing;
+      const next = { id: sessionId(gameId), startedAt: Date.now(), startPromise: Promise.resolve(null) };
+      productSessions.set(gameId, next);
+      return next;
+    }
+    const current = productSessions.get(gameId) || { id: sessionId(gameId), startedAt: Date.now(), startPromise: Promise.resolve(null) };
+    productSessions.delete(gameId);
+    return current;
+  }
+  function recordRemoteSession(event, gameId, params = {}, session = null) {
     if (!core()?.DataProvider?.isBackendEnabled?.() || !gameId) return;
     if (event === 'game_started') {
-      const id = `session:${gameId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-      const startedAt = Date.now(), startPromise = core().DataProvider.recordGameSession?.({ id, gameId, startedAt, result: { event: 'started' } });
-      remoteSessions.set(gameId, { id, startedAt, startPromise: Promise.resolve(startPromise) });
+      if (!session) return;
+      session.startPromise = Promise.resolve(core().DataProvider.recordGameSession?.({ id: session.id, gameId, startedAt: session.startedAt, result: { event: 'started' } }));
     } else if (event === 'game_finished') {
-      const session = remoteSessions.get(gameId) || { id: `session:${gameId}:${Date.now()}`, startedAt: Date.now() };
-      remoteSessions.delete(gameId);
+      if (!session) return;
       const finishedAt = Date.now(), duration = Math.max(0, finishedAt - session.startedAt), entry = { id: session.id, gameId, startedAt: session.startedAt, finishedAt, duration, score: Number(params.score || 0), result: params };
       Promise.resolve(session.startPromise).then(started => {
         if (!started) return null;
@@ -22,10 +34,12 @@
   function handleEvent(event, gameId, params = {}) {
     if (event === 'game_started' && gameId) active.add(gameId);
     if (event === 'game_finished' && gameId) active.delete(gameId);
-    recordRemoteSession(event, gameId, params);
-    core()?.PlayerData?.handleEvent?.(event, gameId, params);
-    window.TelePlayAdminLog?.recordEvent?.(event, gameId, params);
-    const payload = { event, at: Date.now(), gameId, ...params };
+    const session = lifecycle(event, gameId);
+    const detail = session ? { ...params, gameSessionId: session.id, gameSessionStartedAt: session.startedAt, ...(event === 'game_finished' ? { durationMs: Math.max(0, Date.now() - session.startedAt) } : {}) } : params;
+    recordRemoteSession(event, gameId, detail, session);
+    core()?.PlayerData?.handleEvent?.(event, gameId, detail);
+    window.TelePlayAdminLog?.recordEvent?.(event, gameId, detail);
+    const payload = { event, at: Date.now(), gameId, ...detail };
     window.dispatchEvent(new CustomEvent(`teleplay:${event}`, { detail: payload }));
     window.dataLayer?.push(payload);
     return payload;
@@ -43,7 +57,7 @@
     restartGame(gameId) { const adapter = sessions.get(gameId); core().Analytics.gameRestarted(gameId); adapter?.restart?.(); },
     pauseGame(gameId) { const adapter = sessions.get(gameId); core().Analytics.gamePaused(gameId); adapter?.pause?.(); },
     resumeGame(gameId) { sessions.get(gameId)?.resume?.(); },
-    destroyGame(gameId) { sessions.get(gameId)?.destroy?.(); sessions.delete(gameId); active.delete(gameId); }
+    destroyGame(gameId) { sessions.get(gameId)?.destroy?.(); sessions.delete(gameId); active.delete(gameId); productSessions.delete(gameId); }
   };
   window.TelePlayCore ??= {}; window.TelePlayCore.GameSession = GameSession;
 })();

@@ -1,389 +1,91 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#080b17">
-  <meta name="description" content="TelePlay â€” Ð¸Ð³Ñ€Ð¾Ð²Ð¾Ð¹ Ñ…Ð°Ð± Ð² Telegram Ñ ÐºÐ¾Ñ€Ð¾Ñ‚ÐºÐ¸Ð¼Ð¸ Ð°Ñ€ÐºÐ°Ð´Ð½Ñ‹Ð¼Ð¸ Ð¸Ð³Ñ€Ð°Ð¼Ð¸">
-  <title>TelePlay â€” Ð¸Ð³Ñ€Ñ‹ Ð² Telegram</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23080b17'/%3E%3Cpath d='M14 42 22 19h20l8 23-9 5-5-10h-8L23 47z' fill='%236d5dfc'/%3E%3Cpath d='M25 27h14v6H25z' fill='%2300e7ff'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./admin/admin.css">
-  <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
-</head>
-<body>
-  <div class="profile-loading" id="profileLoading" role="status" aria-live="polite">Ð—Ð°Ð³Ñ€ÑƒÐ·ÐºÐ° Ð¿Ñ€Ð¾Ñ„Ð¸Ð»Ñâ€¦</div>
-  <aside class="data-status" id="dataStatus" role="status" aria-live="polite" hidden><span aria-hidden="true">â˜</span><p id="dataStatusMessage">Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ð¾ Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð°.</p><button id="dataStatusRetry" type="button">ÐŸÐ¾Ð²Ñ‚Ð¾Ñ€Ð¸Ñ‚ÑŒ</button></aside>
-  <main class="app-shell" id="storeView">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">T</span>
-        <div>
-          <div class="brand-name">TelePlay</div>
-          <div class="brand-sub">Ð˜Ð³Ñ€Ñ‹ Ð² Ð¾Ð´Ð¸Ð½ Ñ‚Ð°Ð¿</div>
-        </div>
-      </div>
-      <button class="player-mini" id="playerHeader" aria-label="ÐŸÑ€Ð¾Ñ„Ð¸Ð»ÑŒ Ð¸Ð³Ñ€Ð¾ÐºÐ°">
-        <span class="player-avatar" id="playerAvatar">T</span>
-        <span class="player-mini-copy"><b id="playerNickname">Ð˜Ð³Ñ€Ð¾Ðº</b><small>LVL <strong id="playerLevel">1</strong> Â· <em id="playerXp">0 / 100 XP</em></small><i><em id="playerXpBar"></em></i></span>
-      </button>
-      <button class="wallet wallet-button" id="openShop" aria-label="ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¼Ð°Ð³Ð°Ð·Ð¸Ð½ TelePlay"><span>ðŸª™</span><b id="walletCoins">0</b><i aria-hidden="true">â–¸</i></button><span id="adminActionSlot" aria-live="polite"></span>
-    </header>
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×õí:-jZ.¶›­–)Þ³SÂFö7G—R‡FÖÃàÐ£Æ‡FÖÂÆæsÒ''R#àÐ£Æ†VCàÐ¢ÆÖWF6†'6WCÒ%UDbÓ‚#àÐ¢ÆÖWFæÖSÒ'f–Ww÷'B"6öçFVçCÒ'v–GFƒÖFWf–6R×v–GF‚Â–æ—F–Â×66ÆSÓÂf–Ww÷'BÖf—CÖ6÷fW"ÂW6W"×66Æ&ÆSÖæò#àÐ¢ÆÖWFæÖSÒ'F†VÖRÖ6öÆ÷""6öçFVçCÒ"3ƒ#r#àÐ¢ÆÖWFæÖSÒ&FW67&—F–öâ"6öçFVçCÒ%FVÆUÆ’(	B=í-í’]"FVÆVw&Ò­íí-­Í‚­MÝ½Í‚=Í‚#àÐ¢ÇF—FÆSåFVÆUÆ’(	B=²"FVÆVw&ÓÂ÷F—FÆSàÐ¢ÆÆ–æ²&VÃÒ&–6öâ"G—SÒ&–ÖvR÷7fr·†ÖÂ"‡&VcÒ&FF¦–ÖvR÷7fr·†ÖÂÂS477fr†ÖÆç3Òv‡GG¢ò÷wwrçs2æ÷&ró#÷7frrf–Wt&÷ƒÒscBcBrS4RS47&V7Bv–GFƒÒscBr†V–v‡CÒscBr'ƒÒsbrf–ÆÃÒrS#3ƒ#rròS4RS47F‚CÒtÓBC"#"–ƒ#Ã‚#2Ó’RÓRÓ‚Ó„Ã#2Cw¢rf–ÆÃÒrS#3fCVFf2ròS4RS47F‚CÒtÓ#R#vƒGcdƒ#W¢rf–ÆÃÒrS#3SvfbròS4RS42÷7frS4R#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"â÷7G–ÆW2æ773÷cÓ##c“#ÖFÖ–âÖ'WGFöâÓ#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖRÖ6÷fW'2æ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷G&–6²ÖÆ"÷G&–6²ÖÆ"æ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2öæVöâÖG&–gBöæVöâÖG&–gBæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö6÷&RÖG&÷ö6÷&RÖG&÷æ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö6öÆ÷"×6÷'Bö6öÆ÷"×6÷'Bæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷–ær×öær×'W6‚÷–ær×öær×'W6‚æ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷fö–B÷fö–Bæ773÷cÓ##c“#ÖWfVçBÖ†÷&—¦öâÓ#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷F–ÆR×G&–ò÷F–ÆR×G&–òæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö6öÆ÷"×VÇ6Rö6öÆ÷"×VÇ6Ræ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö6÷&R×6†÷Bö6÷&R×6†÷Bæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷Væ&öÇB÷Væ&öÇBæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö'&÷rÖW66Rö'&÷rÖW66Ræ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2ö†ö÷×6†÷Bö†ö÷×6†÷Bæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âövÖW2÷7GVçB×&–FR÷7GVçB×&–FRæ773÷cÓ##c“#Ó#àÐ¢ÆÆ–æ²&VÃÒ'7G–ÆW6†VWB"‡&VcÒ"âöFÖ–âöFÖ–âæ772#àÐ¢Ç67&—B7&3Ò&‡GG3¢ò÷FVÆVw&Òæ÷&rö§2÷FVÆVw&Ò×vV"Öæ§3óc2#ãÂ÷67&—CàÐ£Âö†VCàÐ£Æ&öG“àÐ¢ÆF—b6Æ73Ò'&öf–ÆRÖÆöF–ær"–CÒ'&öf–ÆTÆöF–ær"&öÆSÒ'7FGW2"&–ÖÆ—fSÒ'öÆ—FR#í	}==}­ýíM½þ(
+cÂöF—càÐ¢Æ6–FR6Æ73Ò&FF×7FGW2"–CÒ&FF7FGW2"&öÆSÒ'7FGW2"&–ÖÆ—fSÒ'öÆ—FR"†–FFVããÇ7â&–Ö†–FFVãÒ'G'VR#î)ˆÂ÷7ããÇ–CÒ&FF7FGW4ÖW76vR#í
+Ý]íÝ}mò-]Í]ÝÝâÝ]Mí-=ýÝãÂ÷ãÆ'WGFöâ–CÒ&FF7FGW5&WG'’"G—SÒ&'WGFöâ#í	ýí--í-ÃÂö'WGFöããÂö6–FSàÐ¢ÆÖ–â6Æ73Ò&×6†VÆÂ"–CÒ'7F÷&Uf–Wr#àÐ¢Æ†VFW"6Æ73Ò'F÷&"†öÖR×F÷&"#àÐ¢ÆF—b6Æ73Ò&'&æB#àÐ¢Ç7â6Æ73Ò&'&æBÖÖ&²"&–Ö†–FFVãÒ'G'VR#åCÂ÷7ãàÐ¢ÆF—càÐ¢ÆF—b6Æ73Ò&'&æBÖæÖR#åFVÆUÆ“ÂöF—càÐ¢ÆF—b6Æ73Ò&'&æB×7V"#í	=²"íMÒ-óÂöF—càÐ¢ÂöF—càÐ¢ÂöF—càÐ¢ÆF—b6Æ73Ò&†öÖR×F÷&"Ö7F–öç2#àÐ¢Æ'WGFöâ6Æ73Ò&7W'&Væ7’×–ÆÂ7W'&Væ7’×–ÆÂÖ6ö–ç2"–CÒ&÷Vå6†÷"G—SÒ&'WGFöâ"&–ÖÆ&VÃÒ-	í-­½-ÂÍ=}ÒFVÆV6ö–ç2#ãÇ7â&–Ö†–FFVãÒ'G'VR#åCÂ÷7ããÆ"–CÒ'vÆÆWD6ö–ç2#ãÂö#ãÆ’&–Ö†–FFVãÒ'G'VR#â³Âö“ãÂö'WGFöãàÐ¢Æ'WGFöâ6Æ73Ò&7W'&Væ7’×–ÆÂ7W'&Væ7’×–ÆÂÖvV×2"–CÒ&÷VävV×2"G—SÒ&'WGFöâ"&–ÖÆ&VÃÒ-	í-­½-ÂÍ=}ÒFVÆTvV×2#ãÇ7â&–Ö†–FFVãÒ'G'VR#î)xcÂ÷7ããÆ"–CÒ'vÆÆWDvV×2#ãÂö#ãÆ’&–Ö†–FFVãÒ'G'VR#â³Âö“ãÂö'WGFöãàÐ¢Æ'WGFöâ6Æ73Ò'Æ–W"ÖfF"Ö'WGFöâ"–CÒ'Æ–W$†VFW""G—SÒ&'WGFöâ"&–ÖÆ&VÃÒ-	í-­½-ÂýíM½Â=í­#ãÇ7â6Æ73Ò'Æ–W"ÖfF""–CÒ'Æ–W$fF"#åCÂ÷7ããÂö'WGFöãàÐ¢ÂöF—càÐ¢Âö†VFW#àÐ Ð¢ÆF—b–CÒ&†öÖT6öçFVçB#àÐ¢Ç6V7F–öâ6Æ73Ò&&Æö6²Öw&–BÖ†W&ò"&–ÖÆ&VÆÆVF'“Ò&fVGW&VDvÖUF—FÆR#àÐ¢ÆF—b6Æ73Ò&&Æö6²Öw&–BÖ†W&òÖ6÷’#àÐ¢Ç7â6Æ73Ò&W–V'&÷r#ãÇ7â&–Ö†–FFVãÒ'G'VR#î)™³Â÷7ãâÇ7â–CÒ&fVGW&VDvÖTÆ&VÂ#í	-
+½		í
+DTÄUÄ“Â÷7ããÂ÷7ãàÐ¢Æƒ–CÒ&fVGW&VDvÖUF—FÆR#ä$Äô4³Æ'#ãÆVÓäu$”CÂöVÓãÂöƒàÐ¢Ç–CÒ&fVGW&VDvÖTFW67&—F–öâ#í
+í’­íÍâãÆ'#í	ýí]’-í’]­íBãÂ÷àÐ¢Æ'WGFöâ6Æ73Ò&fVGW&VBÖvÖRÖ'WGFöâ"–CÒ&fVGW&VDvÖT'WGFöâ"G—SÒ&'WGFöâ#î)kbÇ7ãí	=-ÃÂ÷7ããÂö'WGFöãàÐ¢ÂöF—càÐ¢ÆF—b6Æ73Ò&&Æö6²Öw&–BÖ'Gv÷&²"&–Ö†–FFVãÒ'G'VR#ãÆ’6Æ73Ò&&Æö6²Öw&–B×ÆæR#ãÂö“ãÆ’6Æ73Ò&&Æö6²Ö7V&R7V&RÖöæR#ãÂö“ãÆ’6Æ73Ò&&Æö6²Ö7V&R7V&R×Gvò#ãÂö“ãÆ’6Æ73Ò&&Æö6²Ö7V&R7V&R×F‡&VR#ãÂö“ãÆ’6Æ73Ò&&Æö6²Ö7V&R7V&RÖf÷W"#ãÂö“ãÆ’6Æ73Ò&&Æö6²×7&²7&²ÖöæR#ãÂö“ãÆ’6Æ73Ò&&Æö6²×7&²7&²×Gvò#ãÂö“ãÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò'vVV¶Ç’ÖvöÂÖ6&B"–CÒ'vVV¶Ç”vöÄ6&B"&–ÖÆ&VÆÆVF'“Ò'vVV¶Ç”vöÅF—FÆR#àÐ¢ÆF—b6Æ73Ò'vVV¶Ç’ÖvöÂ×&Wv&B"&–Ö†–FFVãÒ'G'VR#ãÇ7ãî)ÊcÂ÷7ããÆ“î)y#Âö“ãÂöF—càÐ¢ÆF—b6Æ73Ò'vVV¶Ç’ÖvöÂÖ6öçFVçB#ãÆF—b6Æ73Ò'vVV¶Ç’ÖvöÂ×F÷#ãÇ7â6Æ73Ò&W–V'&÷r#ï	øêò
+m	]	½
+Â	Ý	]	M	]	½	ƒÂ÷7ããÇ6ÖÆÂ–CÒ'vVV¶Ç”vöÄFVFÆ–æR#í	í-½íÂ(	CÂ÷6ÖÆÃãÂöF—cãÆƒ"–CÒ'vVV¶Ç”vöÅF—FÆR#í	=’"FVÆUÆ“Âöƒ#ãÆF—b6Æ73Ò'vVV¶Ç’ÖvöÂ×&öw&W72#ãÆ“ãÆVÒ–CÒ'vVV¶Ç”vöÄ&"#ãÂöVÓãÂö“ãÆ"–CÒ'vVV¶Ç”vöÅfÇVR#ãòÂö#ãÂöF—cãÇ–CÒ'vVV¶Ç”vöÅ&Wv&B#í	Ý=Mýíý--òýí½RýíM­½í}]Ýò}MÝ’ãÂ÷ãÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò'&V6öÖÖVæFF–öç2×6V7F–öâ"&–ÖÆ&VÆÆVF'“Ò'&V6öÖÖVæFF–öç5F—FÆR#àÐ¢ÆF—b6Æ73Ò'&V6öÖÖVæFF–öç2Ö†VF–ær#ãÆƒ"–CÒ'&V6öÖÖVæFF–öç5F—FÆR#í	M½ò-]óÂöƒ#ãÆ'WGFöâ–CÒ&ÆÄvÖW4'WGFöâ"G—SÒ&'WGFöâ#í	-R=²Ç7â&–Ö†–FFVãÒ'G'VR#î(i#Â÷7ããÂö'WGFöããÂöF—càÐ¢ÆF—b6Æ73Ò'&V6öÖÖVæFF–öç2ÖÆ—7B"–CÒ'&V6öÖÖVæFF–öç4Æ—7B#ãÂöF—càÐ¢Â÷6V7F–öãàÐ¢ÂöF—càÐ Ð¢Ç6V7F–öâ6Æ73Ò&Æ–'&'’×f–Wr"–CÒ&Æ–'&'•f–Wr"&–ÖÆ&VÆÆVF'“Ò&Æ–'&'•F—FÆR"†–FFVãàÐ¢ÆF—b6Æ73Ò&Æ–'&'’Ö†VF–ær#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#åDTÄUÄ’+rÄ”%$%“Â÷7ããÆƒ"–CÒ&Æ–'&'•F—FÆR#í	-R=³Âöƒ#ãÂöF—cãÇ7â–CÒ'6V7F–öä6÷VçB"&–ÖÆ—fSÒ'öÆ—FR#ã‚=Â÷7ããÂöF—càÐ¢Ææb6Æ73Ò&6FVv÷'’×F'2"&–ÖÆ&VÃÒ-	­-]=í‚=#ãÂöæcàÐ¢ÆF—b6Æ73Ò'6V7F–öâÖ†VF–ær#àÐ¢Æƒ"–CÒ'6V7F–öåF—FÆR#í	-R=³Âöƒ#àÐ¢ÂöF—càÐ¢ÆF—b6Æ73Ò&vÖRÖw&–B"–CÒ&vÖTw&–B#àÐ¢ÂöF—càÐ¢ÆF—b6Æ73Ò&V×G’×7FFR"–CÒ&V×G•7FFR"†–FFVãàÐ¢Ç7ãî)xÃÂ÷7ããÆ#í	}M]Â­íâýíý--ò=Âö#ãÇí	ýí­ýíýí=’*½	Ý]íÝí-½’}]}L+²ãÂ÷àÐ¢ÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ææb6Æ73Ò&&÷GFöÒÖæf–vF–öâ"&–ÖÆ&VÃÒ-	íÝí-ÝòÝ-=mò#àÐ¢Æ'WGFöâ–CÒ&†öÖTæd†öÖR"G—SÒ&'WGFöâ"FFÖ†öÖRÖæcÒ&†öÖR"6Æ73Ò&—2Ö7F—fR#ãÇ7â&–Ö†–FFVãÒ'G'VR#î(È#Â÷7ããÆ#í	=½-ÝóÂö#ãÂö'WGFöãàÐ¢Æ'WGFöâ–CÒ&†öÖTædvÖW2"G—SÒ&'WGFöâ"FFÖ†öÖRÖæcÒ&vÖW2#ãÇ7â&–Ö†–FFVãÒ'G'VR#î(ÉƒÂ÷7ããÆ#í	=³Âö#ãÂö'WGFöãàÐ¢Æ'WGFöâ–CÒ&†öÖTæd6†ÆÆVævW2"G—SÒ&'WGFöâ"FFÖ†öÖRÖæcÒ&6†ÆÆVævW2#ãÇ7â&–Ö†–FFVãÒ'G'VR#î)™ÃÂ÷7ããÆ#í	-½}í-³Âö#ãÂö'WGFöãàÐ¢Æ'WGFöâ–CÒ&†öÖTæe&öf–ÆR"G—SÒ&'WGFöâ"FFÖ†öÖRÖæcÒ'&öf–ÆR#ãÇ7â&–Ö†–FFVãÒ'G'VR#î)xóÂ÷7ããÆ#í	ýíM½ÃÂö#ãÂö'WGFöãàÐ¢Æ'WGFöâ–CÒ&†öÖTæe6†÷"G—SÒ&'WGFöâ"FFÖ†öÖRÖæcÒ'6†÷#ãÇ7â&–Ö†–FFVãÒ'G'VR#î)j#Â÷7ããÆ#í	Í=}ÓÂö#ãÂö'WGFöãàÐ¢ÂöæcàÐ¢ÂöÖ–ãàÐ Ð¢Ç6V7F–öâ6Æ73Ò'6†÷×67&VVâ"–CÒ'6†÷67&VVâ"&–ÖÆ&VÃÒ-	Í=}ÒFVÆUÆ’"†–FFVãàÐ¢ÆF—b6Æ73Ò'6†÷×vR#àÐ¢Æ†VFW"6Æ73Ò'6†÷Ö†VFW"#ãÆ'WGFöâ6Æ73Ò&–6öâÖ'WGFöâ"–CÒ&6Æ÷6U6†÷"&–ÖÆ&VÃÒ-	Ý=½-Ý=â#î(“Âö'WGFöããÆF—cãÇ6ÖÆÃåDTÄUÄ’+r4ôÄÄT5D”ôãÂ÷6ÖÆÃãÆƒ"–CÒ'6†÷F—FÆR#í	Í=}ÓÂöƒ#ãÂöF—cãÇ7â6Æ73Ò'&öf–ÆRÖ†VFW"ÖÖ&²"&–Ö†–FFVãÒ'G'VR#î)ÊcÂ÷7ããÂö†VFW#àÐ¢Ç6V7F–öâ6Æ73Ò'6†÷Ö†W&ò#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#í
+	í		
+		’
+	-	í	’
+
+-		½
+ÃÂ÷7ããÆƒ3í	­íÍ]-­]r’×Fò×v–ãÂöƒ3ãÇí
+-í½Í­â-}=½ÍÝ½Rý]MÍ]-²M½òýíM½ò‚½íÍ½R=ãÂ÷ãÂöF—cãÆ'WGFöâ6Æ73Ò'6†÷Ö6öÆÆV7F–öâ×7VÖÖ'’"–CÒ'6†÷6öÆÆV7F–öä'WGFöâ"G—SÒ&'WGFöâ#ãÇ7ãï	ú©’Æ"–CÒ'6†÷6ö–ç2#ãÂö#ãÂ÷7ããÇ7â6Æ73Ò'6†÷ÖvV×2Ö&Ææ6R#ï	ù(âÆ"–CÒ'6†÷vV×2#ãÂö#ãÂ÷7ããÇ6ÖÆÃãÆ"–CÒ'6†÷÷væVD6÷VçB#ãÂö#âòÆ"–CÒ'6†÷F÷FÄ6÷VçB#ãÂö#âíÝãÂ÷6ÖÆÃãÂö'WGFöããÂ÷6V7F–öãàÐ¢ÆF—b6Æ73Ò'6†÷ÖvÖR×FööÆ&""–CÒ&vÖU6†÷FööÆ&""†–FFVããÆ'WGFöâ6Æ73Ò'6V6öæF'’Ö'WGFöâ"–CÒ&&6µFõFVÆUÆ•6†÷"G—SÒ&'WGFöâ#î(’FVÆUÆ’6†÷Âö'WGFöããÇ7â–CÒ&vÖU6†÷Æ&VÂ#ãÂ÷7ããÂöF—càÐ¢Ç6V7F–öâ6Æ73Ò'&VÖ—VÒ×6¶vW2"–CÒ'&VÖ—VÕ6¶vW2"&–ÖÆ&VÃÒ%&VÖ—VÒ6†÷#ãÆF—b6Æ73Ò&FÖ–â×6V7F–öâÖ–çG&ò#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#å$TÔ•TÒ4„õÂ÷7ããÆƒ3åFVÆTvV×2}FVÆVw&Ò7F'3Âöƒ3ãÇ–CÒ'&VÖ—VÕ6¶vW57FGW2#í	}==}­vV×2Ýý­]-í.(
+cÂ÷ãÂöF—cãÂöF—cãÆF—b6Æ73Ò'&VÖ—VÒ×6¶vW2ÖÆ—7B"–CÒ'&VÖ—VÕ6¶vW4Æ—7B#ãÂöF—cãÂ÷6V7F–öãàÐ¢ÆF—b6Æ73Ò'6†÷ÖvÖRÖÆ–æ·2"–CÒ'6†÷vÖTÆ–æ·2"&–ÖÆ&VÃÒ-	Í=}Ý²=#ãÂöF—càÐ¢Ææb6Æ73Ò'6†÷×F'2"–CÒ'6†÷F'2"&–ÖÆ&VÃÒ-	­-]=í‚Í=}Ý#ãÂöæcàÐ¢ÆF—b6Æ73Ò'6†÷Öw&–B"–CÒ'6†÷w&–B#ãÂöF—càÐ¢ÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×67&VVâ"–CÒ'&öf–ÆU67&VVâ"&–ÖÆ&VÃÒ-	ýíM½Â=í­"†–FFVãàÐ¢ÆF—b6Æ73Ò'&öf–ÆR×vR#àÐ¢Æ†VFW"6Æ73Ò'&öf–ÆRÖ†VFW"#ãÆ'WGFöâ6Æ73Ò&–6öâÖ'WGFöâ"–CÒ&6Æ÷6U&öf–ÆR"&–ÖÆ&VÃÒ-	Ý=½-Ý=â#î(“Âö'WGFöããÆF—cãÇ6ÖÆÃåDTÄUÄ’+rÄ”U#Â÷6ÖÆÃãÆƒ#í	ýíM½ÃÂöƒ#ãÂöF—cãÇ7â6Æ73Ò'&öf–ÆRÖ†VFW"ÖÖ&²"&–Ö†–FFVãÒ'G'VR#î)ÊcÂ÷7ããÂö†VFW#àÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×Æ–W"Ö6&B#ãÆF—b6Æ73Ò'&öf–ÆR×Æ–W"ÖÖ–â#ãÇ7â6Æ73Ò'&öf–ÆRÖfF""–CÒ'&öf–ÆTfF"#åCÂ÷7ããÆF—b6Æ73Ò'&öf–ÆR×Æ–W"Ö6÷’#ãÆ"–CÒ'&öf–ÆTæ–6¶æÖR#í	=í£Âö#ãÇ6ÖÆÃåDTÄUÄ’ÄUdTÂÇ7G&öær–CÒ'&öf–ÆTÆWfVÂ#ãÂ÷7G&öæsãÂ÷6ÖÆÃãÇ7â6Æ73Ò'&öf–ÆR×&æ²ÖÆ–æR#ãÆVÒ–CÒ'&öf–ÆU&æ²#å&öö¶–SÂöVÓãÆ’–CÒ'&öf–ÆT7F—fUF—FÆR#í	Ýí-}í¢FVÆUÆ“Âö“ãÂ÷7ããÇ7â6Æ73Ò'&öf–ÆR×Æ–W"×‡#ãÆVÒ–CÒ'&öf–ÆU‡#ãò…ÂöVÓãÆ“ãÆVÒ–CÒ'&öf–ÆU‡&"#ãÂöVÓãÂö“ãÂ÷7ããÂöF—cãÂöF—cãÆF—b6Æ73Ò'&öf–ÆR×vÆÆWB#ãÇ7ãï	ú©’Æ"–CÒ'&öf–ÆT6ö–ç2#ãÂö#ãÂ÷7ããÇ7â6Æ73Ò'&öf–ÆRÖvV×2×vÆÆWB#ï	ù(âÆ"–CÒ'&öf–ÆTvV×2#ãÂö#ãÂ÷7ããÇ6ÖÆÃåDTÄUÄ’tÄÄUCÂ÷6ÖÆÃãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×6V7F–öâ&öf–ÆRÖ7F—f—G’×6V7F–öâ&öf–ÆRÖ7F—f—G’ÖfVGW&R&öf–ÆRÖ6öÆÆ6–&ÆR"FF×&öf–ÆR×6V7F–öããÆ'WGFöâ6Æ73Ò'&öf–ÆR×6V7F–öâ×FövvÆR"G—SÒ&'WGFöâ"&–ÖW‡æFVCÒ&fÇ6R"&–Ö6öçG&öÇ3Ò'&öf–ÆT7F—f—G”6öçFVçB#ãÇ7ããÇ7â6Æ73Ò&W–V'&÷r#ï	ùJR		­
+-		-	Ý	í
+
+-
+ÃÂ÷7ããÇ6ÖÆÂ–CÒ'&öf–ÆT7F—f—G”ÖWF#íýí½]MÝýò=í-ò]óÂ÷6ÖÆÃãÂ÷7ããÆ’&–Ö†–FFVãÒ'G'VR#î(ÈCÂö“ãÂö'WGFöããÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ6öçFVçB"–CÒ'&öf–ÆT7F—f—G”6öçFVçB#ãÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ–ææW"#ãÆF—b6Æ73Ò'&öf–ÆRÖ7F—f—G’×7VÖÖ'’#ãÇ7ãï	ùJR
+]òÆ"–CÒ'&öf–ÆU7G&V²#ãMÝ]“Âö#ãÂ÷7ããÇ7ãï	øêò
+]=íMÝòÆ"–CÒ'&öf–ÆTF–Ç”6ö×ÆWFVB#ãò3Âö#ãÂ÷7ããÂöF—cãÆF—b6Æ73Ò'&öf–ÆRÖ7F—f—G’ÖÆ—7B"–CÒ'&öf–ÆT7F—f—G”Æ—7B#ãÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í	}M]Âýíý--ò--íòý]-ò=í-ò]òãÂ÷7ããÂöF—cãÆ'WGFöâ6Æ73Ò'&öf–ÆRÖ6†ÆÆVævW2Ö'WGFöâ"–CÒ'&öf–ÆT6†ÆÆVævW4'WGFöâ"G—SÒ&'WGFöâ#ãÇ7ãí	í-­½-Â}MÝóÂ÷7ããÆ#î(£Âö#ãÂö'WGFöããÂöF—cãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×7FG2#ãÆF—cãÇ6ÖÆÃï	øêâ		=
+
+
+½	=
+		Ý	ãÂ÷6ÖÆÃãÆ"–CÒ'&öf–ÆTvÖW2#ãÂö#ãÂöF—cãÆF—cãÇ6ÖÆÃî(û	-
+	]	Í
+ò		=
 
-    <nav class="category-tabs" aria-label="ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ Ð¸Ð³Ñ€">
-    </nav>
+³Â÷6ÖÆÃãÆ"–CÒ'&öf–ÆUÆ•F–ÖR#ãÍÓÂö#ãÂöF—cãÆF—cãÇ6ÖÆÃï	øøb	½
+=
+}
+		’
+	]	}
+=	½
+Í
+-	
+#Â÷6ÖÆÃãÆ"–CÒ'&öf–ÆT&W7E66÷&R#ãÂö#ãÂöF—cãÆF—cãÇ6ÖÆÃî*Ù
+	]	­	í
+	M	í	#Â÷6ÖÆÃãÆ"–CÒ'&öf–ÆU&V6÷&G2#ãÂö#ãÂöF—cãÆF—cãÇ6ÖÆÃï	ú©’	}	
+			í
+-		Ý	ãÂ÷6ÖÆÃãÆ"–CÒ'&öf–ÆT6ö–ç4V&æVB#ãÂö#ãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×&öw&W76–öâ&öf–ÆRÖ6öÆÆ6–&ÆR"FF×&öf–ÆR×6V7F–öããÆ'WGFöâ6Æ73Ò'&öf–ÆR×6V7F–öâ×FövvÆR"G—SÒ&'WGFöâ"&–ÖW‡æFVCÒ&fÇ6R"&–Ö6öçG&öÇ3Ò'&öf–ÆU&öw&W746öçFVçB#ãÇ7ããÇ7â6Æ73Ò&W–V'&÷r#í
+-	-	í	’	ý
+	í	=
+	]
+
+Â÷7ããÇ6ÖÆÂ–CÒ'&öf–ÆT6†–WfVÖVçE&öw&W72#ãòMí-m]Ý“Â÷6ÖÆÃãÂ÷7ããÆ’&–Ö†–FFVãÒ'G'VR#î(ÈCÂö“ãÂö'WGFöããÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ6öçFVçB"–CÒ'&öf–ÆU&öw&W746öçFVçB#ãÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ–ææW"#ãÆF—b6Æ73Ò'&öf–ÆRÖÖ7FW'’ÖÆ—7B"–CÒ'&öf–ÆTÖ7FW'”Æ—7B#ãÂöF—cãÂöF—cãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×6V7F–öâ&öf–ÆRÖvÖW2×6V7F–öâ&öf–ÆRÖ6öÆÆ6–&ÆR"FF×&öf–ÆR×6V7F–öããÆ'WGFöâ6Æ73Ò'&öf–ÆR×6V7F–öâ×FövvÆR"G—SÒ&'WGFöâ"&–ÖW‡æFVCÒ&fÇ6R"&–Ö6öçG&öÇ3Ò'&öf–ÆTff÷&—FW46öçFVçB#ãÇ7ããÇ7â6Æ73Ò&W–V'&÷r#í	½
+í			Í
+½	R		=
 
-    <section class="home-dashboard-hero">
-      <div class="home-hero-copy">
-        <h1>Ð¢Ð²Ð¾Ð¹ Ñ…Ð¾Ð´.<br>Ð¢Ð²Ð¾Ñ Ð¸Ð³Ñ€Ð°.<br>Ð¢Ð²Ð¾Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´.</h1>
-        <p>ÐšÐ¾Ñ€Ð¾Ñ‚ÐºÐ¸Ðµ Ð½ÐµÐ¾Ð½Ð¾Ð²Ñ‹Ðµ Ð¸Ð³Ñ€Ñ‹, Ð¾Ð´Ð¸Ð½ Ð¾Ð±Ñ‰Ð¸Ð¹ Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑÑ Ð¸ Ð½Ð¾Ð²Ñ‹Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´ Ñ ÐºÐ°Ð¶Ð´Ð¾Ð¹ Ð¿Ð¾Ð¿Ñ‹Ñ‚ÐºÐ¸.</p>
-        <div class="home-hero-actions"><button class="play-button" id="heroStartButton">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐµÐ¹Ñ‡Ð°Ñ <span>â–¶</span></button></div>
-      </div>
-      <div class="home-hero-orb" aria-hidden="true"><span>TP</span><i></i><b></b>
-      </div>
-    </section>
-    <section class="continue-card" id="continueCard">
-      <div class="continue-icon" id="continueIcon">â–¶</div>
-      <div class="continue-copy"><span class="eyebrow" id="continueKicker">ðŸŽ® ÐŸÐžÐŸÐ ÐžÐ‘Ð£Ð™ Ð˜Ð“Ð Ð£</span><b id="continueTitle">Ð¢Ð²Ð¾Ñ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð°Ñ Ð¸Ð³Ñ€Ð°</b><small id="continueProgress">ÐžÑ‚ÐºÑ€Ð¾Ð¹ Ð¸Ð³Ñ€Ñƒ Ð¸ Ð¿Ð¾ÑÑ‚Ð°Ð²ÑŒ Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ñ€ÐµÐºÐ¾Ñ€Ð´</small></div>
-      <button class="continue-button" id="continueButton">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ</button>
-    </section>
+³Â÷7ããÇ6ÖÆÃíýâ}ý=­ÃÂ÷6ÖÆÃãÂ÷7ããÆ’&–Ö†–FFVãÒ'G'VR#î(ÈCÂö“ãÂö'WGFöããÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ6öçFVçB"–CÒ'&öf–ÆTff÷&—FW46öçFVçB#ãÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ–ææW"#ãÆF—b6Æ73Ò&ff÷&—FRÖvÖW2ÖÆ—7B"–CÒ&ff÷&—FTvÖW4Æ—7B#ãÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í
+½=’Ý]­í½Í­â=(	B}M]Âýíý-ý-òM-í-²ãÂ÷7ããÂöF—cãÂöF—cãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò'&öf–ÆR×6V7F–öâ&öf–ÆR×&V6÷&G2×6V7F–öâ&öf–ÆRÖ6öÆÆ6–&ÆR"FF×&öf–ÆR×6V7F–öããÆ'WGFöâ6Æ73Ò'&öf–ÆR×6V7F–öâ×FövvÆR"G—SÒ&'WGFöâ"&–ÖW‡æFVCÒ&fÇ6R"&–Ö6öçG&öÇ3Ò'&öf–ÆU&V6÷&G46öçFVçB#ãÇ7ããÇ7â6Æ73Ò&W–V'&÷r#í	Í	í	‚
+	]	­	í
+	M
+³Â÷7ããÇ6ÖÆÃí½=}R]}=½Í--³Â÷6ÖÆÃãÂ÷7ããÆ’&–Ö†–FFVãÒ'G'VR#î(ÈCÂö“ãÂö'WGFöããÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ6öçFVçB"–CÒ'&öf–ÆU&V6÷&G46öçFVçB#ãÆF—b6Æ73Ò'&öf–ÆR×æVÂÖ–ææW"#ãÆF—b6Æ73Ò'&öf–ÆR×&V6÷&G2ÖÆ—7B"–CÒ'&öf–ÆU&V6÷&G4Æ—7B#ãÇ7â6Æ73Ò'&öf–ÆRÖV×G’#í
+½=’ý]-=â=2(	B]­íM²ýíý-ý-ò}M]ÂãÂ÷7ããÂöF—cãÂöF—cãÂöF—cãÂ÷6V7F–öãàÐ¢Æ'WGFöâ6Æ73Ò'&öf–ÆR×6WGF–æw2×Æ6V†öÆFW""–CÒ'&öf–ÆU6WGF–æw5Æ6V†öÆFW""G—SÒ&'WGFöâ#ãÇ7ãî)©’	Ý-í­ƒÂ÷7ããÇ6ÖÆÃí
+­íãÂ÷6ÖÆÃãÂö'WGFöãàÐ¢ÆF—b–CÒ&FÖ–ä7F–öå6Æ÷B"6Æ73Ò&FÖ–âÖ7F–öâ×6Æ÷B"&–ÖÆ—fSÒ'öÆ—FR#ãÂöF—càÐ¢ÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò&6†ÆÆVævW2×67&VVâ"–CÒ&6†ÆÆVævW567&VVâ"&–ÖÆ&VÃÒ-	}MÝòFVÆUÆ’"†–FFVãàÐ¢ÆF—b6Æ73Ò&6†ÆÆVævW2×vR#àÐ¢Æ†VFW"6Æ73Ò&6†ÆÆVævW2Ö†VFW"#ãÆ'WGFöâ6Æ73Ò&–6öâÖ'WGFöâ"–CÒ&6Æ÷6T6†ÆÆVævW2"&–ÖÆ&VÃÒ-	Ý}B#î(“Âö'WGFöããÆF—cãÇ6ÖÆÃåDTÄUÄ’+r5D•d•E“Â÷6ÖÆÃãÆƒ#í	}MÝóÂöƒ#ãÂöF—cãÇ7â6Æ73Ò'&öf–ÆRÖ†VFW"ÖÖ&²"&–Ö†–FFVãÒ'G'VR#î)ÊcÂ÷7ããÂö†VFW#àÐ¢Ç6V7F–öâ6Æ73Ò&6†ÆÆVævW2Ö†W&ò#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#í	-	í	}	-
+	
+		
+
+ò	­		m	M
+½	’	M	]	Ý
+ÃÂ÷7ããÆƒ3í	=’(	B}’Ý=M³Âöƒ3ãÇí	Ý]í½ÍRm]½‚ýíÍí=í"M]m-Â-]Íò‚ýí­}--ÂFVÆUÆ’ÆWfVÂãÂ÷ãÂöF—cãÆF—b6Æ73Ò'7G&V²Ö&FvR#ãÇ7ãï	ùJSÂ÷7ããÆ"–CÒ&6†ÆÆVævU7G&V²#ãÂö#ãÇ6ÖÆÃíMÝ]’ýíMýCÂ÷6ÖÆÃãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò&6†ÆÆVævRÖw&÷W#ãÆF—b6Æ73Ò&6†ÆÆVævRÖw&÷WÖ†VF–ær#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#í
+	]	=	í	M	Ý
+óÂ÷7ããÆƒ3äF–Ç’6†ÆÆVævW3Âöƒ3ãÂöF—cãÇ6ÖÆÂ–CÒ&F–Ç”6†ÆÆVævU&W6WB#íMâ­íÝmMÝóÂ÷6ÖÆÃãÂöF—cãÆF—b6Æ73Ò&6†ÆÆVævRÖÆ—7B"–CÒ&F–Ç”6†ÆÆVævW4Æ—7B#ãÂöF—cãÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò&6†ÆÆVævRÖw&÷W#ãÆF—b6Æ73Ò&6†ÆÆVævRÖw&÷WÖ†VF–ær#ãÆF—cãÇ7â6Æ73Ò&W–V'&÷r#í
+Ý
+-		Ý	]	M	]	½
+óÂ÷7ããÆƒ3åvVV¶Ç’Ö—76–öç3Âöƒ3ãÂöF—cãÇ6ÖÆÂ–CÒ'vVV¶Ç”6†ÆÆVævU&W6WB#íMâ­íÝmÝ]M]½ƒÂ÷6ÖÆÃãÂöF—cãÆF—b6Æ73Ò&6†ÆÆVævRÖÆ—7B"–CÒ'vVV¶Ç”6†ÆÆVævW4Æ—7B#ãÂöF—cãÂ÷6V7F–öãàÐ¢ÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò&FÖ–â×67&VVâ"–CÒ&FÖ–å67&VVâ"&–ÖÆ&VÃÒ%FVÆUÆ’FÖ–âæVÂ"†–FFVããÆF—b–CÒ&FÖ–ä#ãÂöF—cãÂ÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò'G&–6²ÖÆ"×67&VVâ"–CÒ'G&–6´Æ%67&VVâ"&–ÖÆ&VÃÒ%G&–6²Æ""†–FFVãàÐ¢ÆF—b6Æ73Ò'G&–6²ÖÆ"Ö–ææW"#àÐ¢Æ†VFW"6Æ73Ò'G&–6²ÖÆ"Ö‡VB#ãÆ'WGFöâ6Æ73Ò&–6öâÖ'WGFöâ"–CÒ'G&–6´Æ$6Æ÷6R"G—SÒ&'WGFöâ"&–ÖÆ&VÃÒ-	Ý=½-Ý=â#ì9sÂö'WGFöããÆF—b6Æ73Ò'G&–6²ÖÆ"Ö'&æB#ãÇ6ÖÆÃåDTÄUÄ’+r	½	í	=		­	Â÷6ÖÆÃãÆ#åG&–6²Æ#Âö#ãÂöF—cãÆF—b6Æ73Ò&‡VB×7FB#ãÇ6ÖÆÃí
+
+}
+#Â÷6ÖÆÃãÆ"–CÒ'G&–6´Æ%66÷&R#ãÂö#ãÂöF—cãÆ'WGFöâ6Æ73Ò&–6öâÖ'WGFöâ"–CÒ'G&–6´Æ%W6R"G—SÒ&'WGFöâ"&–ÖÆ&VÃÒ-	ý=}#î(ZÂö'WGFöããÂö†VFW#àÐ¢ÆF—b6Æ73Ò'G&–6²ÖÆ"×&öw&W72#ãÇ7ãí
+=
+	í	-	]	Ý
+ÂÆ"–CÒ'G&–6´Æ$ÆWfVÂ#ãò3Âö#ãÂ÷7ããÇ7ãí
+]	í	M
+²Æ"–CÒ'G&–6´Æ$Ö÷fW2#ãÂö#ãÂ÷7ããÂöF—càÐ¢ÆF—b6Æ73Ò'G&–6²ÖÆ"×66VæR"–CÒ'G&–6´Æ%66VæR"&–ÖÆ—fSÒ'öÆ—FR#ãÂöF—càÐ¢Ç6Æ73Ò'G&–6²ÖÆ"ÖfVVF&6²"–CÒ'G&–6´Æ$fVVF&6²#í	}Í]Ý‚ý-½âÍ‚}ý=-‚]=âãÂ÷àÐ¢ÆF—b6Æ73Ò'G&–6²ÖÆ"×'VÆW2"–CÒ'G&–6´Æ%'VÆW2"&–ÖÆ&VÃÒ-	­-í}­‚ý-²#ãÂöF—càÐ¢Æ'WGFöâ6Æ73Ò'Æ’Ö'WGFöâÆ&vRG&–6²ÖÆ"×'Vâ"–CÒ'G&–6´Æ%'Vâ"G—SÒ&'WGFöâ#í	}ý=--Âý-½ãÂö'WGFöãàÐ¢ÂöF—càÐ¢ÆF—b6Æ73Ò'7F'B×æVÂG&–6²ÖÆ"Ö÷fW&Æ’"–CÒ'G&–6´Æ%7F'B#ãÇ7â6Æ73Ò'æVÂÖ¶–6¶W"#åDTÄUÄ’+r	½	í	=		­	Â÷7ããÆƒ#åG&–6³Æ'#äÆ#Âöƒ#ãÇí	Í]Ýý’ý-½ÍãÆ'#í	ÝM‚]]ÝR}ÍÝÍ=Â]íMí"ãÂ÷ãÆ'WGFöâ6Æ73Ò'Æ’Ö'WGFöâÆ&vR"–CÒ'G&–6´Æ%7F'D'WGFöâ"G—SÒ&'WGFöâ#í	Ý}-ÂÝ­ý]Í]Ý#Âö'WGFöããÆF—b6Æ73Ò'&V6÷&B#í	½=}’]}=½Í-#¢Æ"–CÒ'G&–6´Æ$ÖVçT&W7B#ãÂö#ãÂöF—cãÂöF—càÐ¢ÆF—b6Æ73Ò'7F'B×æVÂ&W7VÇB×æVÂG&–6²ÖÆ"Ö÷fW&Æ’"–CÒ'G&–6´Æ%&W7VÇB"†–FFVããÇ7â6Æ73Ò'æVÂÖ¶–6¶W""FF×&W7VÇCÒ&¶–6¶W"#í	½			í
+	
+-	í
+	
+ò	}		­
 
-    <section class="quick-stats" aria-label="ÐšÑ€Ð°Ñ‚ÐºÐ°Ñ ÑÑ‚Ð°Ñ‚Ð¸ÑÑ‚Ð¸ÐºÐ°">
-      <div class="quick-stat-best"><small>ðŸ† Ð›Ð£Ð§Ð¨Ð˜Ð™ Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b id="quickBest">0</b></div><div><small>ðŸŽ® Ð˜Ð“Ð  Ð¡Ð«Ð“Ð ÐÐÐž</small><b id="quickGames">0</b></div><div><small>ðŸª™ TELECOINS</small><b id="quickCoins">0</b></div>
-    </section>
-
-    <section class="section-block">
-      <div class="section-heading">
-        <h2 id="sectionTitle">Ð’ÑÐµ Ð¸Ð³Ñ€Ñ‹</h2>
-        <span id="sectionCount" aria-live="polite">18 Ð¸Ð³Ñ€</span>
-      </div>
-      <div class="game-grid" id="gameGrid">
-      </div>
-      <div class="empty-state" id="emptyState" hidden>
-        <span>â—Œ</span><b>Ð—Ð´ÐµÑÑŒ ÑÐºÐ¾Ñ€Ð¾ Ð¿Ð¾ÑÐ²Ð¸Ñ‚ÑÑ Ð¸Ð³Ñ€Ð°</b><p>Ð Ð¿Ð¾ÐºÐ° Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹ Â«ÐÐµÐ¾Ð½Ð¾Ð²Ñ‹Ð¹ Ð·Ð°ÐµÐ·Ð´Â».</p>
-      </div>
-    </section>
-  </main>
-
-  <section class="shop-screen" id="shopScreen" aria-label="ÐœÐ°Ð³Ð°Ð·Ð¸Ð½ TelePlay" hidden>
-    <div class="shop-page">
-      <header class="shop-header"><button class="icon-button" id="closeShop" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">â€¹</button><div><small>TELEPLAY Â· COLLECTION</small><h2 id="shopTitle">ÐœÐ°Ð³Ð°Ð·Ð¸Ð½</h2></div><span class="profile-header-mark" aria-hidden="true">âœ¦</span></header>
-      <section class="shop-hero"><div><span class="eyebrow">Ð¡ÐžÐ‘Ð˜Ð ÐÐ™ Ð¡Ð’ÐžÐ™ Ð¡Ð¢Ð˜Ð›Ð¬</span><h3>ÐšÐ¾ÑÐ¼ÐµÑ‚Ð¸ÐºÐ° Ð±ÐµÐ· pay-to-win</h3><p>Ð¢Ð¾Ð»ÑŒÐºÐ¾ Ð²Ð¸Ð·ÑƒÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð¿Ñ€ÐµÐ´Ð¼ÐµÑ‚Ñ‹ Ð´Ð»Ñ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»Ñ Ð¸ Ð»ÑŽÐ±Ð¸Ð¼Ñ‹Ñ… Ð¸Ð³Ñ€.</p></div><button class="shop-collection-summary" id="shopCollectionButton" type="button"><span>ðŸª™ <b id="shopCoins">0</b></span><span class="shop-gems-balance">ðŸ’Ž <b id="shopGems">0</b></span><small><b id="shopOwnedCount">1</b> / <b id="shopTotalCount">0</b> ÑÐ¾Ð±Ñ€Ð°Ð½Ð¾</small></button></section>
-      <div class="shop-game-toolbar" id="gameShopToolbar" hidden><button class="secondary-button" id="backToTelePlayShop" type="button">â€¹ TelePlay Shop</button><span id="gameShopLabel"></span></div>
-      <section class="premium-packages" id="premiumPackages" aria-label="Premium Shop"><div class="admin-section-intro"><div><span class="eyebrow">PREMIUM SHOP</span><h3>TeleGems Ð·Ð° Telegram Stars</h3><p id="premiumPackagesStatus">Ð—Ð°Ð³Ñ€ÑƒÐ·ÐºÐ° Gems-Ð¿Ð°ÐºÐµÑ‚Ð¾Ð²â€¦</p></div></div><div class="premium-packages-list" id="premiumPackagesList"></div></section>
-      <div class="shop-game-links" id="shopGameLinks" aria-label="ÐœÐ°Ð³Ð°Ð·Ð¸Ð½Ñ‹ Ð¸Ð³Ñ€"></div>
-      <nav class="shop-tabs" id="shopTabs" aria-label="ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ Ð¼Ð°Ð³Ð°Ð·Ð¸Ð½Ð°"></nav>
-      <div class="shop-grid" id="shopGrid"></div>
-    </div>
-  </section>
-
-  <section class="profile-screen" id="profileScreen" aria-label="ÐŸÑ€Ð¾Ñ„Ð¸Ð»ÑŒ Ð¸Ð³Ñ€Ð¾ÐºÐ°" hidden>
-    <div class="profile-page">
-      <header class="profile-header"><button class="icon-button" id="closeProfile" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">â€¹</button><div><small>TELEPLAY Â· PLAYER</small><h2>ÐŸÑ€Ð¾Ñ„Ð¸Ð»ÑŒ</h2></div><span class="profile-header-mark" aria-hidden="true">âœ¦</span></header>
-      <section class="profile-player-card"><div class="profile-player-main"><span class="profile-avatar" id="profileAvatar">T</span><div class="profile-player-copy"><b id="profileNickname">Ð˜Ð³Ñ€Ð¾Ðº</b><small>TELEPLAY LEVEL <strong id="profileLevel">1</strong></small><span class="profile-rank-line"><em id="profileRank">Rookie</em><i id="profileActiveTitle">ÐÐ¾Ð²Ð¸Ñ‡Ð¾Ðº TelePlay</i></span><span class="profile-player-xp"><em id="profileXp">0 / 100 XP</em><i><em id="profileXpBar"></em></i></span></div></div><div class="profile-wallet"><span>ðŸª™ <b id="profileCoins">0</b></span><span class="profile-gems-wallet">ðŸ’Ž <b id="profileGems">0</b></span><small>TELEPLAY WALLET</small></div></section>
-      <section class="profile-section profile-activity-section profile-activity-feature profile-collapsible" data-profile-section><button class="profile-section-toggle" type="button" aria-expanded="false" aria-controls="profileActivityContent"><span><span class="eyebrow">ðŸ”¥ ÐÐšÐ¢Ð˜Ð’ÐÐžÐ¡Ð¢Ð¬</span><small id="profileActivityMeta">Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÑÑ Ð¸Ð³Ñ€Ð¾Ð²Ð°Ñ ÑÐµÑÑÐ¸Ñ</small></span><i aria-hidden="true">âŒ„</i></button><div class="profile-panel-content" id="profileActivityContent"><div class="profile-panel-inner"><div class="profile-activity-summary"><span>ðŸ”¥ Ð¡ÐµÑ€Ð¸Ñ <b id="profileStreak">0 Ð´Ð½ÐµÐ¹</b></span><span>ðŸŽ¯ Ð¡ÐµÐ³Ð¾Ð´Ð½Ñ <b id="profileDailyCompleted">0 / 3</b></span></div><div class="profile-activity-list" id="profileActivityList"><span class="profile-empty">Ð—Ð´ÐµÑÑŒ Ð¿Ð¾ÑÐ²Ð¸Ñ‚ÑÑ Ñ‚Ð²Ð¾Ñ Ð¿ÐµÑ€Ð²Ð°Ñ Ð¸Ð³Ñ€Ð¾Ð²Ð°Ñ ÑÐµÑÑÐ¸Ñ.</span></div><button class="profile-challenges-button" id="profileChallengesButton" type="button"><span>ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ</span><b>â€º</b></button></div></div></section>
-      <section class="profile-stats"><div><small>ðŸŽ® Ð˜Ð“Ð  Ð¡Ð«Ð“Ð ÐÐÐž</small><b id="profileGames">0</b></div><div><small>â± Ð’Ð Ð•ÐœÐ¯ Ð˜Ð“Ð Ð«</small><b id="profilePlayTime">0 Ð¼Ð¸Ð½</b></div><div><small>ðŸ† Ð›Ð£Ð§Ð¨Ð˜Ð™ Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b id="profileBestScore">0</b></div><div><small>â­ Ð Ð•ÐšÐžÐ Ð”ÐžÐ’</small><b id="profileRecords">0</b></div><div><small>ðŸª™ Ð—ÐÐ ÐÐ‘ÐžÐ¢ÐÐÐž</small><b id="profileCoinsEarned">0</b></div></section>
-      <section class="profile-progression profile-collapsible" data-profile-section><button class="profile-section-toggle" type="button" aria-expanded="false" aria-controls="profileProgressContent"><span><span class="eyebrow">Ð¢Ð’ÐžÐ™ ÐŸÐ ÐžÐ“Ð Ð•Ð¡Ð¡</span><small id="profileAchievementProgress">0 / 11 Ð´Ð¾ÑÑ‚Ð¸Ð¶ÐµÐ½Ð¸Ð¹</small></span><i aria-hidden="true">âŒ„</i></button><div class="profile-panel-content" id="profileProgressContent"><div class="profile-panel-inner"><div class="profile-mastery-list" id="profileMasteryList"></div></div></div></section>
-      <section class="profile-section profile-games-section profile-collapsible" data-profile-section><button class="profile-section-toggle" type="button" aria-expanded="false" aria-controls="profileFavoritesContent"><span><span class="eyebrow">Ð›Ð®Ð‘Ð˜ÐœÐ«Ð• Ð˜Ð“Ð Ð«</span><small>Ð¿Ð¾ Ð·Ð°Ð¿ÑƒÑÐºÐ°Ð¼</small></span><i aria-hidden="true">âŒ„</i></button><div class="profile-panel-content" id="profileFavoritesContent"><div class="profile-panel-inner"><div class="favorite-games-list" id="favoriteGamesList"><span class="profile-empty">Ð¡Ñ‹Ð³Ñ€Ð°Ð¹ Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¸Ð³Ñ€ â€” Ð·Ð´ÐµÑÑŒ Ð¿Ð¾ÑÐ²ÑÑ‚ÑÑ Ñ„Ð°Ð²Ð¾Ñ€Ð¸Ñ‚Ñ‹.</span></div></div></div></section>
-      <section class="profile-section profile-records-section profile-collapsible" data-profile-section><button class="profile-section-toggle" type="button" aria-expanded="false" aria-controls="profileRecordsContent"><span><span class="eyebrow">ÐœÐžÐ˜ Ð Ð•ÐšÐžÐ Ð”Ð«</span><small>Ð»ÑƒÑ‡ÑˆÐ¸Ðµ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚Ñ‹</small></span><i aria-hidden="true">âŒ„</i></button><div class="profile-panel-content" id="profileRecordsContent"><div class="profile-panel-inner"><div class="profile-records-list" id="profileRecordsList"><span class="profile-empty">Ð¡Ñ‹Ð³Ñ€Ð°Ð¹ Ð¿ÐµÑ€Ð²ÑƒÑŽ Ð¸Ð³Ñ€Ñƒ â€” Ñ€ÐµÐºÐ¾Ñ€Ð´Ñ‹ Ð¿Ð¾ÑÐ²ÑÑ‚ÑÑ Ð·Ð´ÐµÑÑŒ.</span></div></div></div></section>
-      <button class="profile-settings-placeholder" id="profileSettingsPlaceholder" type="button"><span>âš™ ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸</span><small>Ð¡ÐºÐ¾Ñ€Ð¾</small></button>
-    </div>
-  </section>
-
-  <section class="challenges-screen" id="challengesScreen" aria-label="Ð—Ð°Ð´Ð°Ð½Ð¸Ñ TelePlay" hidden>
-    <div class="challenges-page">
-      <header class="challenges-header"><button class="icon-button" id="closeChallenges" aria-label="ÐÐ°Ð·Ð°Ð´">â€¹</button><div><small>TELEPLAY Â· ACTIVITY</small><h2>Ð—Ð°Ð´Ð°Ð½Ð¸Ñ</h2></div><span class="profile-header-mark" aria-hidden="true">âœ¦</span></header>
-      <section class="challenges-hero"><div><span class="eyebrow">Ð’ÐžÐ—Ð’Ð ÐÐ©ÐÐ™Ð¡Ð¯ ÐšÐÐ–Ð”Ð«Ð™ Ð”Ð•ÐÐ¬</span><h3>Ð˜Ð³Ñ€Ð°Ð¹ â€” Ð·Ð°Ð±Ð¸Ñ€Ð°Ð¹ Ð½Ð°Ð³Ñ€Ð°Ð´Ñ‹</h3><p>ÐÐµÐ±Ð¾Ð»ÑŒÑˆÐ¸Ðµ Ñ†ÐµÐ»Ð¸ Ð¿Ð¾Ð¼Ð¾Ð³Ð°ÑŽÑ‚ Ð´ÐµÑ€Ð¶Ð°Ñ‚ÑŒ Ñ‚ÐµÐ¼Ð¿ Ð¸ Ð¿Ñ€Ð¾ÐºÐ°Ñ‡Ð¸Ð²Ð°Ñ‚ÑŒ TelePlay Level.</p></div><div class="streak-badge"><span>ðŸ”¥</span><b id="challengeStreak">0</b><small>Ð´Ð½ÐµÐ¹ Ð¿Ð¾Ð´Ñ€ÑÐ´</small></div></section>
-      <section class="challenge-group"><div class="challenge-group-heading"><div><span class="eyebrow">Ð¡Ð•Ð“ÐžÐ”ÐÐ¯</span><h3>Daily Challenges</h3></div><small id="dailyChallengeReset">Ð´Ð¾ ÐºÐ¾Ð½Ñ†Ð° Ð´Ð½Ñ</small></div><div class="challenge-list" id="dailyChallengesList"></div></section>
-      <section class="challenge-group"><div class="challenge-group-heading"><div><span class="eyebrow">Ð­Ð¢Ð ÐÐ•Ð”Ð•Ð›Ð¯</span><h3>Weekly Missions</h3></div><small id="weeklyChallengeReset">Ð´Ð¾ ÐºÐ¾Ð½Ñ†Ð° Ð½ÐµÐ´ÐµÐ»Ð¸</small></div><div class="challenge-list" id="weeklyChallengesList"></div></section>
-    </div>
-  </section>
-
-  <section class="admin-screen" id="adminScreen" aria-label="TelePlay Admin Panel" hidden><div id="adminApp"></div></section>
-
-  <section class="game-screen" id="gameScreen" aria-label="ÐÐµÐ¾Ð½Ð¾Ð²Ñ‹Ð¹ Ð·Ð°ÐµÐ·Ð´" hidden>
-    <canvas id="raceCanvas"></canvas>
-    <div class="game-hud">
-      <button class="icon-button" id="closeGame" aria-label="Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¸Ð³Ñ€Ñƒ">Ã—</button>
-      <div class="hud-stat"><small>Ð¡Ð§ÐÐ¢</small><b id="score">0</b></div>
-      <div class="hud-stat combo-stat"><small>ÐšÐžÐœÐ‘Ðž</small><b id="combo">Ã—1</b></div>
-      <button class="icon-button" id="pauseGame" aria-label="ÐŸÐ°ÑƒÐ·Ð°">â…¡</button>
-    </div>
-    <div class="run-status">
-      <span class="coin-pill">â— <b id="runCoins">0</b></span>
-      <span class="shield-pill" id="shieldPill" hidden>Ð©Ð˜Ð¢ ÐÐšÐ¢Ð˜Ð’Ð•Ð</span>
-    </div>
-    <div class="event-toast" id="eventToast" aria-live="polite"></div>
-    <div class="start-panel" id="startPanel">
-      <span class="panel-kicker">TELEPLAY Â· Ð“ÐžÐÐšÐ˜</span>
-      <h2>ÐÐµÐ¾Ð½Ð¾Ð²Ñ‹Ð¹<br>Ð·Ð°ÐµÐ·Ð´</h2>
-      <p>ÐžÐ±Ð³Ð¾Ð½ÑÐ¹ Ð²Ð¿Ð»Ð¾Ñ‚Ð½ÑƒÑŽ, ÐºÐ¾Ð¿Ð¸ Ð½Ð¸Ñ‚Ñ€Ð¾<br>Ð¸ Ð¿Ð¾Ð´Ð±Ð¸Ñ€Ð°Ð¹ Ð·Ð°Ñ‰Ð¸Ñ‚Ð½Ñ‹Ð¹ Ñ‰Ð¸Ñ‚.</p>
-      <button class="play-button large" id="startRace">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð·Ð°ÐµÐ·Ð´</button>
-      <button class="race-garage-button" id="gameGarage" aria-controls="garageScreen">
-        <span class="race-garage-heading">Ð“Ð°Ñ€Ð°Ð¶ <span aria-hidden="true">â€º</span></span>
-        <span class="race-garage-car">Ð¢Ð²Ð¾Ñ Ð¼Ð°ÑˆÐ¸Ð½Ð°: <b id="activeCarName">Ð˜ÑÐºÑ€Ð°</b></span>
-      </button>
-      <div class="record">Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚: <b id="panelBest">0</b></div>
-    </div>
-    <div class="start-panel result-panel" id="resultPanel" hidden>
-      <span class="panel-kicker" data-result="kicker">Ð˜Ð“Ð Ð ÐžÐšÐžÐÐ§Ð•ÐÐ</span>
-      <h2 id="resultTitle" data-result="title">ÐžÑ‚Ð»Ð¸Ñ‡Ð½Ñ‹Ð¹<br>Ð·Ð°ÐµÐ·Ð´!</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b id="finalScore" data-result="score">0</b></div>
-      <div class="result-details race-result-details">
-        <span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b id="finalBest" data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b id="finalCoins" data-result="reward">+0 ðŸª™</b></span>
-        <span>Ð”Ð¸ÑÑ‚Ð°Ð½Ñ†Ð¸Ñ <b data-result="distance">0 Ð¼</b></span><span>Near Miss <b data-result="nearMisses">0</b> Â· ÐšÐ¾Ð¼Ð±Ð¾ <b data-result="maxCombo">Ã—1</b></span>
-      </div>
-      <div class="vehicle-progress" id="vehicleProgress" data-result="vehicleProgress"></div>
-      <button class="play-button large" id="restartRace">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button>
-      <button class="text-button" id="backToStore">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-    <div class="touch-controls" aria-label="Ð£Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¼Ð°ÑˆÐ¸Ð½Ð¾Ð¹">
-      <button id="moveLeft" aria-label="ÐŸÐµÑ€ÐµÑÑ‚Ñ€Ð¾Ð¸Ñ‚ÑŒÑÑ Ð²Ð»ÐµÐ²Ð¾">â€¹</button>
-      <button class="nitro-button" id="useNitro" aria-label="Ð’ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ Turbo" disabled><span>âš¡</span><small>TURBO</small></button>
-      <button id="moveRight" aria-label="ÐŸÐµÑ€ÐµÑÑ‚Ñ€Ð¾Ð¸Ñ‚ÑŒÑÑ Ð²Ð¿Ñ€Ð°Ð²Ð¾">â€º</button>
-    </div>
-  </section>
-
-  <section class="garage-screen" id="garageScreen" aria-label="Ð“Ð°Ñ€Ð°Ð¶" hidden>
-    <div class="garage-header">
-      <button class="icon-button" id="closeGarage" aria-label="Ð’ÐµÑ€Ð½ÑƒÑ‚ÑŒÑÑ Ðº ÑÑ‚Ð°Ñ€Ñ‚Ñƒ Ð³Ð¾Ð½ÐºÐ¸">â€¹</button>
-      <div><small>ÐÐ•ÐžÐÐžÐ’Ð«Ð™ Ð—ÐÐ•Ð—Ð”</small><h2>Ð“Ð°Ñ€Ð°Ð¶</h2></div>
-      <div class="wallet"><span>â—</span><b id="garageCoins">0</b></div>
-    </div>
-    <p class="garage-intro">Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ð¼Ð°ÑˆÐ¸Ð½Ñƒ. Ð£ ÐºÐ°Ð¶Ð´Ð¾Ð¹ â€” ÑÐ²Ð¾Ð¹ Ð±Ð¾Ð½ÑƒÑ Ð² Ð·Ð°ÐµÐ·Ð´Ðµ.</p>
-    <div class="garage-grid" id="garageGrid"></div>
-    <div class="garage-return"><button class="play-button large" id="returnToRace">Ðš ÑÑ‚Ð°Ñ€Ñ‚Ñƒ Ð³Ð¾Ð½ÐºÐ¸</button></div>
-  </section>
-  <section class="block-game" id="blockGridScreen" aria-label="Block Grid" hidden>
-    <div class="block-game-inner">
-      <header class="block-hud">
-        <button class="icon-button" id="closeBlockGrid" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">Ã—</button>
-        <div class="block-title"><small>TELEPLAY Â· ÐŸÐÐ—Ð›Ð«</small><b>Block Grid</b></div>
-        <div class="hud-stat"><small>Ð¡Ð§ÐÐ¢</small><b id="blockScore">0</b></div>
-        <div class="hud-stat combo-stat"><small>ÐšÐžÐœÐ‘Ðž</small><b id="blockCombo">Ã—1</b></div>
-      </header>
-      <div class="block-stage">
-        <div class="block-board-wrap"><div class="block-board" id="blockBoard" aria-label="Ð˜Ð³Ñ€Ð¾Ð²Ð¾Ðµ Ð¿Ð¾Ð»Ðµ 8 Ð½Ð° 8"></div><div class="block-particles" id="blockParticles" aria-hidden="true"></div></div>
-        <p class="block-hint">ÐŸÐµÑ€ÐµÑ‚Ð°Ñ‰Ð¸ Ñ„Ð¸Ð³ÑƒÑ€Ñƒ Ð½Ð° Ð¿Ð¾Ð»Ðµ</p>
-        <div class="block-tray" id="blockTray" aria-label="Ð”Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹Ðµ Ñ„Ð¸Ð³ÑƒÑ€Ñ‹"></div>
-      </div>
-    </div>
-    <div class="start-panel block-overlay" id="blockStart">
-      <span class="panel-kicker">TELEPLAY Â· ÐŸÐÐ—Ð›Ð«</span><h2>Block<br>Grid</h2>
-      <p>Ð Ð°Ð·Ð¼ÐµÑ‰Ð°Ð¹ Ð½ÐµÐ¾Ð½Ð¾Ð²Ñ‹Ðµ Ñ„Ð¸Ð³ÑƒÑ€Ñ‹.<br>Ð—Ð°Ð¿Ð¾Ð»Ð½ÑÐ¹ Ð»Ð¸Ð½Ð¸Ð¸ Ð¸ ÑÐ¾Ð±Ð¸Ñ€Ð°Ð¹ ÐºÐ¾Ð¼Ð±Ð¾.</p>
-      <button class="play-button large" id="startBlockGrid">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð¸Ð³Ñ€Ñƒ</button>
-      <div class="record">Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚: <b id="blockMenuBest">0</b></div>
-    </div>
-    <div class="start-panel result-panel block-overlay" id="blockResult" hidden>
-      <span class="panel-kicker" id="blockResultKicker" data-result="kicker">Ð˜Ð“Ð Ð ÐžÐšÐžÐÐ§Ð•ÐÐ</span><h2 data-result="title">Block<br>Grid</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b id="blockFinalScore" data-result="score">0</b></div>
-      <div class="result-details block-result-details"><span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b id="blockBestScore" data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b id="blockReward" data-result="reward">+0 ðŸª™</b></span></div>
-      <button class="play-button large" id="replayBlockGrid">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button><button class="text-button" id="blockHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-  </section>
-  <section class="beat-screen" id="beatDashScreen" aria-label="Beat Dash" hidden>
-    <div class="beat-inner">
-      <header class="beat-hud">
-        <button class="icon-button" id="beatClose" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">Ã—</button>
-        <div class="beat-brand"><small>TELEPLAY Â· Ð Ð•ÐÐšÐ¦Ð˜Ð¯</small><b>Beat Dash</b></div>
-        <div class="hud-stat"><small>Ð¡Ð§ÐÐ¢</small><b id="beatScore">0</b></div>
-        <button class="icon-button" id="beatSound" aria-label="Ð’Ñ‹ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ Ð·Ð²ÑƒÐº">ðŸ”Š</button>
-        <button class="icon-button" id="beatPause" aria-label="ÐŸÐ°ÑƒÐ·Ð°">â…¡</button>
-      </header>
-      <div class="beat-progress"><span>ÐŸÐ ÐžÐ“Ð Ð•Ð¡Ð¡ <b id="beatProgress">0%</b></span><i><em id="beatProgressBar"></em></i></div>
-      <div class="beat-run-stats"><span class="beat-combo-stat" id="beatComboStat">COMBO <b id="beatCombo">Ã—1</b></span><span>ðŸª™ <b id="beatRunCoins">0</b></span></div>
-      <canvas id="beatDashCanvas"></canvas>
-      <div class="beat-tap-hint">Ð¢ÐÐŸ Ã—2 = Ð”Ð’ÐžÐ™ÐÐžÐ™ ÐŸÐ Ð«Ð–ÐžÐš</div><div class="event-toast" id="beatEventToast" aria-live="polite"></div>
-    </div>
-    <div class="start-panel beat-overlay" id="beatStart">
-      <span class="panel-kicker">TELEPLAY Â· Ð Ð•ÐÐšÐ¦Ð˜Ð¯</span><h2>Beat<br>Dash</h2>
-      <p>Ð¢Ð°Ð¿Ð°Ð¹, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿Ñ€Ñ‹Ð³Ð°Ñ‚ÑŒ.<br>Ð’ Ð²Ð¾Ð·Ð´ÑƒÑ…Ðµ Ð¼Ð¾Ð¶Ð½Ð¾ Ð¿Ñ€Ñ‹Ð³Ð½ÑƒÑ‚ÑŒ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.</p>
-      <button class="play-button large" id="beatStartButton">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð·Ð°Ð±ÐµÐ³</button>
-      <div class="record">Ð›ÑƒÑ‡ÑˆÐµÐµ Ð¿Ñ€Ð¾Ñ…Ð¾Ð¶Ð´ÐµÐ½Ð¸Ðµ: <b id="beatMenuBest">0%</b></div>
-    </div>
-    <div class="start-panel result-panel beat-overlay" id="beatResult" hidden>
-      <span class="panel-kicker" data-result="kicker">Ð—ÐÐ‘Ð•Ð“ ÐžÐšÐžÐÐ§Ð•Ð</span><h2 data-result="title">Ð•Ñ‰Ñ‘<br>Ð¿Ð¾Ð¿Ñ‹Ñ‚ÐºÐ°?</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b data-result="score">0</b></div>
-      <div class="result-details beat-result-details"><span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b data-result="reward">+0 ðŸª™</b></span><span>ÐŸÑ€Ð¾Ñ…Ð¾Ð¶Ð´ÐµÐ½Ð¸Ðµ <b data-result="progress">0%</b></span><span>ÐšÐ¾Ð¼Ð±Ð¾ <b data-result="maxCombo">Ã—1</b></span></div>
-      <div class="beat-result-progress" id="beatResultProgress"></div>
-      <button class="play-button large" id="beatReplay">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button><button class="text-button" id="beatHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-  </section>
-  <section class="hook-screen" id="neonHookScreen" aria-label="Neon Hook" hidden>
-    <div class="hook-inner">
-      <header class="hook-hud">
-        <button class="icon-button" id="hookClose" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">Ã—</button>
-        <div class="hook-brand"><small>TELEPLAY Â· ÐÐ ÐšÐÐ”Ð«</small><b>Neon Hook</b></div>
-        <div class="hud-stat"><small>Ð¡Ð§ÐÐ¢</small><b id="hookScore">0</b></div>
-        <button class="icon-button" id="hookPause" aria-label="ÐŸÐ°ÑƒÐ·Ð°">â…¡</button>
-      </header>
-      <div class="hook-progress"><span><b id="hookLevelProgress">LEVEL 1</b><b id="hookProgress">0%</b></span><i><em id="hookProgressBar"></em></i></div>
-      <div class="hook-run-stats"><span class="hook-combo-stat" id="hookComboStat">COMBO <b id="hookCombo">Ã—1</b></span><span>ðŸª™ <b id="hookRunCoins">0</b></span></div>
-      <canvas id="neonHookCanvas"></canvas>
-      <div class="hook-tap-hint">Ð£Ð”Ð•Ð Ð–Ð˜Ð’ÐÐ™ â€” Ð—ÐÐ¦Ð•ÐŸÐ˜Ð¡Ð¬ Â· ÐžÐ¢ÐŸÐ£Ð¡Ð¢Ð˜ â€” Ð’Ð›Ð•Ð¢Ð˜ Ð’ ÐŸÐžÐ Ð¢ÐÐ›</div><div class="event-toast" id="hookEventToast" aria-live="polite"></div>
-    </div>
-    <div class="start-panel hook-overlay" id="neonHookStart">
-      <span class="panel-kicker">TELEPLAY Â· ÐÐ ÐšÐÐ”Ð«</span><h2>Neon<br>Hook</h2>
-      <p>Ð—Ð°Ñ†ÐµÐ¿Ð¸ÑÑŒ Ð·Ð° ÑÐ½ÐµÑ€Ð³Ð¾-Ñ‚Ð¾Ñ‡ÐºÑƒ.<br>Ð Ð°ÑÐºÐ°Ñ‡Ð°Ð¹ÑÑ Ð¸ Ð¾Ñ‚Ð¿ÑƒÑÑ‚Ð¸ Ð²Ð¾Ð²Ñ€ÐµÐ¼Ñ.</p>
-      <div class="hook-level-picker"><button class="icon-button" id="hookLevelPrev" aria-label="ÐŸÑ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰Ð¸Ð¹ ÑƒÑ€Ð¾Ð²ÐµÐ½ÑŒ">â€¹</button><b id="hookLevelLabel">Ð£Ð ÐžÐ’Ð•ÐÐ¬ 1 / 30</b><button class="icon-button" id="hookLevelNext" aria-label="Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÑ€Ð¾Ð²ÐµÐ½ÑŒ">â€º</button></div>
-      <button class="play-button large" id="hookStartButton">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð¿Ð¾Ð»Ñ‘Ñ‚</button>
-      <div class="record">Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚: <b id="hookMenuBest">0</b></div>
-    </div>
-    <div class="start-panel result-panel hook-overlay" id="neonHookResult" hidden>
-      <span class="panel-kicker" data-result="kicker">Ð—ÐÐ‘Ð•Ð“ ÐžÐšÐžÐÐ§Ð•Ð</span><h2 data-result="title">Ð•Ñ‰Ñ‘<br>Ð¿Ð¾Ð¿Ñ‹Ñ‚ÐºÐ°?</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b data-result="score">0</b></div>
-      <div class="result-details hook-result-details"><span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b data-result="reward">+0 ðŸª™</b></span><span>Ð£Ñ€Ð¾Ð²ÐµÐ½ÑŒ <b data-result="level">1 / 30</b></span><span>ÐšÐ¾Ð¼Ð±Ð¾ <b data-result="maxCombo">Ã—1</b></span></div>
-      <div class="hook-result-meta"><span>Ð”Ð¸ÑÑ‚Ð°Ð½Ñ†Ð¸Ñ <b data-result="distance">0 Ð¼</b></span><span>ÐšÑ€ÑŽÐºÐ¸ <b data-result="hooks">0</b></span></div>
-      <button class="play-button large" id="hookReplay">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button><button class="play-button large hook-next" id="hookNext" hidden>Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÑ€Ð¾Ð²ÐµÐ½ÑŒ</button><button class="text-button" id="hookHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-  </section>
-  <section class="core-drop-screen" id="coreDropScreen" aria-label="Core Drop" hidden>
-    <div class="core-drop-inner">
-      <header class="core-drop-hud">
-        <button class="icon-button" id="coreDropClose" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">Ã—</button>
-        <div class="core-drop-brand"><small>TELEPLAY Â· ÐÐ ÐšÐÐ”Ð«</small><b>Core Drop</b><span id="coreDropZone">Ð’Ð•Ð Ð¥ÐÐ¯Ð¯ ÐšÐžÐ Ð</span></div>
-        <div class="core-drop-depth"><small>Ð“Ð›Ð£Ð‘Ð˜ÐÐ</small><b id="coreDropDepth">0 Ð¼</b></div>
-        <button class="icon-button" id="coreDropPause" aria-label="ÐŸÐ°ÑƒÐ·Ð°">â…¡</button>
-      </header>
-      <div class="core-drop-bars">
-        <div><span><b>Ð¡Ð¢ÐÐ‘Ð˜Ð›Ð¬ÐÐžÐ¡Ð¢Ð¬</b><strong id="coreDropStabilityText">100%</strong></span><i><em id="coreDropStabilityBar"></em></i></div>
-        <div><span><b>Ð—ÐÐ Ð¯Ð” Ð˜ÐœÐŸÐ£Ð›Ð¬Ð¡Ð</b><strong id="coreDropChargeText">100%</strong></span><i><em id="coreDropChargeBar"></em></i></div>
-      </div>
-      <div class="core-drop-stats"><span>Ð¡Ð§ÐÐ¢ <b id="coreDropScore">0</b></span><span>ÐœÐÐ¡Ð¡Ð <b id="coreDropMass">1</b></span><span id="coreDropComboStat">ÐšÐžÐœÐ‘Ðž <b id="coreDropCombo">Ã—1</b></span></div>
-      <canvas id="coreDropCanvas"></canvas>
-      <div class="core-drop-toast" id="coreDropToast" aria-live="polite"></div>
-      <button class="core-drop-impulse" id="coreDropImpulse" type="button" disabled><span>â—†</span><b>Ð˜ÐœÐŸÐ£Ð›Ð¬Ð¡</b><small>30%</small></button>
-      <div class="core-drop-hint">Ð’Ð•Ð”Ð˜ Ð¯Ð”Ð Ðž Ð’Ð›Ð•Ð’Ðž Ð˜ Ð’ÐŸÐ ÐÐ’Ðž Â· ÐŸÐ ÐžÐ‘Ð˜Ð’ÐÐ™Ð¡Ð¯ Ð“Ð›Ð£Ð‘Ð–Ð•</div>
-    </div>
-    <div class="start-panel core-drop-overlay" id="coreDropStart">
-      <span class="panel-kicker">TELEPLAY Â· ÐÐ ÐšÐÐ”Ð«</span><h2>Core<br>Drop</h2>
-      <p>ÐŸÑ€Ð¾Ð±Ð¸Ð²Ð°Ð¹ÑÑ Ñ‡ÐµÑ€ÐµÐ· Ð½ÐµÐ´Ñ€Ð° Ð¿Ð»Ð°Ð½ÐµÑ‚Ñ‹.<br>Ð¡Ð¾Ð±Ð¸Ñ€Ð°Ð¹ ÑÐ½ÐµÑ€Ð³Ð¸ÑŽ. Ð Ð¸ÑÐºÑƒÐ¹ Ð³Ð»ÑƒÐ±Ð¶Ðµ.</p>
-      <button class="play-button large" id="coreDropStartButton">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ Ð¿Ð°Ð´ÐµÐ½Ð¸Ðµ</button>
-      <div class="core-drop-menu-record"><span>Ð›Ð£Ð§Ð¨Ð˜Ð™ Ð¡Ð§ÐÐ¢ <b id="coreDropMenuBest">0</b></span><span>Ð“Ð›Ð£Ð‘Ð˜ÐÐ <b id="coreDropMenuDepth">0 Ð¼</b></span></div>
-    </div>
-    <div class="start-panel result-panel core-drop-overlay" id="coreDropResult" hidden>
-      <span class="panel-kicker" data-result="kicker">Ð¯Ð”Ð Ðž Ð ÐÐ—Ð Ð£Ð¨Ð•ÐÐž</span><h2 data-result="title">Ð¯Ð´Ñ€Ð¾<br>Ñ€Ð°Ð·Ñ€ÑƒÑˆÐµÐ½Ð¾</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b data-result="score">0</b></div>
-      <div class="result-details core-drop-result-details"><span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b data-result="reward">+0 ðŸª™</b></span><span>Ð“Ð»ÑƒÐ±Ð¸Ð½Ð° <b data-result="depth">0 Ð¼</b></span><span>ÐœÐ°ÑÑÐ° <b data-result="mass">0</b></span><span>ÐšÐ¾Ð¼Ð±Ð¾ <b data-result="maxCombo">Ã—1</b></span><span>ÐžÑÐºÐ¾Ð»ÐºÐ¸ <b data-result="shards">0</b></span></div>
-      <button class="play-button large" id="coreDropReplay">ÐŸÐ°Ð´Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button><button class="text-button" id="coreDropHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-  </section>
-  <section class="penalty-screen" id="penaltyDuelScreen" aria-label="Penalty Duel" hidden>
-    <div class="penalty-inner">
-      <header class="penalty-hud">
-        <button class="icon-button" id="penaltyClose" aria-label="ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ">Ã—</button>
-        <div class="penalty-brand"><small>TELEPLAY Â· Ð¡ÐŸÐžÐ Ð¢</small><b>Penalty Duel</b></div>
-        <div class="hud-stat"><small>Ð¡Ð§ÐÐ¢</small><b id="penaltyScore">0</b></div>
-        <button class="icon-button" id="penaltySound" aria-label="Ð’Ñ‹ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ Ð·Ð²ÑƒÐº">ðŸ”Š</button>
-      </header>
-      <div class="penalty-progress"><span><b id="penaltyShotLabel">Ð£Ð”ÐÐ  1 / 5</b><b id="penaltyCombo">COMBO Ã—1</b></span><i><em id="penaltySeriesProgress"></em></i></div>
-      <div class="penalty-run-stats"><span>Ð“ÐžÐ›Ð« <b id="penaltyGoals">0</b></span><span>Ð¡Ð•Ð™Ð’Ð« <b id="penaltySaves">0</b></span><span>ðŸª™ <b id="penaltyRunCoins">0</b></span></div>
-      <canvas id="penaltyDuelCanvas"></canvas>
-      <div class="penalty-mind" id="penaltyMind">Ð’Ð ÐÐ¢ÐÐ Ð¬ ÐÐÐ‘Ð›Ð®Ð”ÐÐ•Ð¢</div>
-      <div class="penalty-swipe-hint" id="penaltySwipeHint">Ð¡Ð’ÐÐ™ÐŸÐÐ˜ ÐžÐ¢ ÐœÐ¯Ð§Ð Ðš Ð¦Ð•Ð›Ð˜</div>
-      <div class="event-toast" id="penaltyEventToast" aria-live="polite"></div>
-    </div>
-    <div class="start-panel penalty-overlay" id="penaltyStart">
-      <span class="panel-kicker">TELEPLAY Â· SPORTS</span><h2>Penalty<br>Duel</h2>
-      <p>Ð¡Ð²Ð°Ð¹Ð¿Ð½Ð¸ Ðº ÑƒÐ³Ð»Ñƒ Ð²Ð¾Ñ€Ð¾Ñ‚.<br>ÐžÐ±Ð¼Ð°Ð½Ð¸ Ð²Ñ€Ð°Ñ‚Ð°Ñ€Ñ Ð¸ Ð·Ð°Ð±ÐµÐ¹ ÑÐµÑ€Ð¸ÑŽ.</p>
-      <div class="penalty-mode-badge">5 Ð£Ð”ÐÐ ÐžÐ’ Â· 3 ÐŸÐ•Ð Ð’Ð«Ð¥ â€” Ð¢Ð Ð•ÐÐ˜Ð ÐžÐ’ÐšÐ</div>
-      <button class="play-button large" id="penaltyStartButton">ÐÐ°Ñ‡Ð°Ñ‚ÑŒ ÑÐµÑ€Ð¸ÑŽ</button>
-      <div class="record">Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚: <b id="penaltyMenuBest">0</b></div>
-    </div>
-    <div class="start-panel result-panel penalty-overlay" id="penaltyResult" hidden>
-      <span class="panel-kicker" data-result="kicker">Ð¡Ð•Ð Ð˜Ð¯ ÐžÐšÐžÐÐ§Ð•ÐÐ</span><h2 data-result="title">Ð•Ñ‰Ñ‘<br>ÑƒÐ´Ð°Ñ€?</h2>
-      <div class="result-score"><small>Ð Ð•Ð—Ð£Ð›Ð¬Ð¢ÐÐ¢</small><b data-result="score">0</b></div>
-      <div class="result-details penalty-result-details"><span>Ð›ÑƒÑ‡ÑˆÐ¸Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ <b data-result="best">0</b></span><span>ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¾ <b data-result="reward">+0 ðŸª™</b></span><span>Ð“Ð¾Ð»Ñ‹ / ÑÐµÐ¹Ð²Ñ‹ <b data-result="goals">0 / 0</b></span><span>ÐœÐ°ÐºÑ. ÐºÐ¾Ð¼Ð±Ð¾ <b data-result="maxCombo">Ã—1</b></span></div>
-      <div class="penalty-xp">STRIKER LEVEL <b id="penaltyResultLevel" data-result="level">1</b> <span>Â· XP <b data-result="xp">0</b></span></div>
-      <button class="play-button large" id="penaltyReplay">Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°</button><button class="text-button" id="penaltyHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button>
-    </div>
-  </section>
-  <section class="soon-screen" id="soonScreen" aria-labelledby="soonTitle" hidden>
-    <header class="soon-header"><button class="icon-button" id="closeSoon" aria-label="ÐÐ°Ð·Ð°Ð´ Ð² ÐºÐ°Ñ‚Ð°Ð»Ð¾Ð³">â€¹</button><b>TelePlay</b><span>Ð¡ÐºÐ¾Ñ€Ð¾</span></header>
-    <div class="soon-content"><div id="soonArt"></div><span class="soon-badge">Ð’ Ñ€Ð°Ð·Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐµ</span><h1 id="soonTitle"></h1><p id="soonSubtitle"></p><p class="soon-message">Ð—Ð´ÐµÑÑŒ ÑÐºÐ¾Ñ€Ð¾ Ð¿Ð¾ÑÐ²Ð¸Ñ‚ÑÑ Ð½Ð¾Ð²Ð°Ñ Ð¸Ð³Ñ€Ð°.</p><button class="play-button large" id="soonHome">ÐÐ° Ð³Ð»Ð°Ð²Ð½ÑƒÑŽ</button></div>
-  </section>
-  <script src="./runtime-config.js"></script>
-  <script src="./core/save-manager.js"></script>
-  <script src="./core/telegram-auth.js"></script>
-  <script src="./core/data-provider-config.js"></script>
-  <script src="./core/player-model.js"></script>
-  <script src="./core/data-provider.js"></script>
-  <script src="./core/player/profile.js"></script>
-  <script src="./core/player/progression-config.js"></script>
-  <script src="./core/player/progress.js"></script>
-  <script src="./core/player/statistics.js"></script>
-  <script src="./core/player/mastery.js"></script>
-  <script src="./core/player/titles.js"></script>
-  <script src="./core/player/xp-manager.js"></script>
-  <script src="./core/player/achievements.js"></script>
-  <script src="./core/player/home.js"></script>
-  <script src="./core/player-data.js"></script>
-  <script src="./core/analytics.js"></script>
-  <script src="./core/currency-manager.js"></script>
-  <script src="./core/reward-manager.js"></script>
-  <script src="./core/shop/config.js"></script>
-  <script src="./core/shop/shop-manager.js"></script>
-  <script src="./core/payment-manager.js"></script>
-  <script src="./core/shop/game-shop.js"></script>
-  <script src="./core/player/challenges.js"></script>
-  <script src="./core/audio-manager.js"></script>
-  <script src="./core/haptic-manager.js"></script>
-  <script src="./core/game-session.js"></script>
-  <script src="./game-adapters/base-adapter.js"></script>
-  <script src="./game-adapters/canvas-adapter.js"></script>
-  <script src="./game-adapters/puzzle-adapter.js"></script>
-  <script src="./game-adapters/sports-adapter.js"></script>
-  <script src="./games.js"></script>
-  <script src="./game-shell.js"></script>
-  <script src="./arcade-engine/core/game-loop.js"></script>
-  <script src="./arcade-engine/core/input-manager.js"></script>
-  <script src="./arcade-engine/core/camera.js"></script>
-  <script src="./arcade-engine/core/game-state.js"></script>
-  <script src="./arcade-engine/systems/particles.js"></script>
-  <script src="./arcade-engine/systems/collision.js"></script>
-  <script src="./arcade-engine/systems/score.js"></script>
-  <script src="./arcade-engine/entities/entity.js"></script>
-  <script src="./games/block-grid/shop/shop.js"></script>
-  <script src="./block-grid.js"></script>
-  <script src="./games/neon-race/config.js"></script>
-  <script src="./games/neon-race/shop/shop.js"></script>
-  <script src="./games/neon-race/systems/garage.js"></script>
-  <script src="./games/neon-race/renderer.js"></script>
-  <script src="./games/neon-race/game.js"></script>
-  <script src="./games/beat-dash/config.js"></script>
-  <script src="./games/beat-dash/shop/shop.js"></script>
-  <script src="./games/beat-dash/engine.js"></script>
-  <script src="./games/beat-dash/renderer.js"></script>
-  <script src="./games/beat-dash/game.js"></script>
-  <script src="./games/neon-hook/config.js"></script>
-  <script src="./games/neon-hook/shop/shop.js"></script>
-  <script src="./games/neon-hook/entities.js"></script>
-  <script src="./games/neon-hook/engine/collision.js"></script>
-  <script src="./games/neon-hook/engine/camera.js"></script>
-  <script src="./games/neon-hook/engine/physics.js"></script>
-  <script src="./games/neon-hook/engine/game-loop.js"></script>
-  <script src="./games/neon-hook/renderer.js"></script>
-  <script src="./games/neon-hook/game.js"></script>
-  <script src="./games/core-drop/game.js"></script>
-  <script src="./games/penalty-duel/config.js"></script>
-  <script src="./games/penalty-duel/shop/shop.js"></script>
-  <script src="./games/penalty-duel/sports-engine/core/trajectory.js"></script>
-  <script src="./games/penalty-duel/sports-engine/core/physics.js"></script>
-  <script src="./games/penalty-duel/sports-engine/core/collision.js"></script>
-  <script src="./games/penalty-duel/physics.js"></script>
-  <script src="./games/penalty-duel/goal-system.js"></script>
-  <script src="./games/penalty-duel/ai/keeper.js"></script>
-  <script src="./games/penalty-duel/sports-engine/systems/score.js"></script>
-  <script src="./games/penalty-duel/sports-engine/systems/result.js"></script>
-  <script src="./games/penalty-duel/renderer.js"></script>
-  <script src="./games/penalty-duel/game.js"></script>
-  <script src="./admin/config/admin-config.js"></script>
-  <script src="./admin/services/admin-auth.js"></script>
-  <script src="./admin/services/admin-event-log.js"></script>
-  <script src="./admin/services/admin-action-manager.js"></script>
-  <script src="./admin/services/admin-data.js"></script>
-  <script src="./admin/components/admin-view.js"></script>
-  <script src="./admin/pages/admin-panel.js"></script>
-  <script src="./app.js"></script>
-</body>
-</html>
+½
+-	Â÷7ããÆƒ"FF×&W7VÇCÒ'F—FÆR#í
+]]ÝSÆ'#íÝM]ÝâÂöƒ#ãÆF—b6Æ73Ò'&W7VÇB×66÷&R#ãÇ6ÖÆÃí
+	]	}
+=	½
+Í
+-	
+#Â÷6ÖÆÃãÆ"FF×&W7VÇCÒ'66÷&R#ãÂö#ãÂöF—cãÆF—b6Æ73Ò'&W7VÇBÖFWF–Ç2#ãÇ7ãí	½=}’]}=½Í-"Æ"FF×&W7VÇCÒ&&W7B#ãÂö#ãÂ÷7ããÇ7ãí	ýí½=}]ÝâÆ"FF×&W7VÇCÒ'&Wv&B#â³	ú©“Âö#ãÂ÷7ããÇ7ãí
+]íM²Æ"FF×&W7VÇCÒ&Ö÷fW2#ãÂö#ãÂ÷7ããÇ7ãí
+=í-Ý‚Æ"FF×&W7VÇCÒ&ÆWfVÇ2#ãò3Âö#ãÂ÷7ããÂöF—cãÆ'WGFöâ6Æ73Ò'Æ’Ö'WGFöâÆ&vR"–CÒ'G&–6´Æ%&WÆ’"G—SÒ&'WGFöâ#í	Ýí-½’Ý­ý]Í]Ý#Âö'WGFöããÆ'WGFöâ6Æ73Ò'FW‡BÖ'WGFöâ"–CÒ'G&–6´Æ$†öÖR"G—SÒ&'WGFöâ#í	Ý=½-Ý=ãÂö'WGFöããÂöF—càÐ¢Â÷6V7F–öãàÐ Ð¢Ç6V7F–öâ6Æ73Ò&æVöâÖG&–gB×67&VVâ"–CÒ&æVöäG&–gE67&VVâ"&–ÖÆ&VÃÒ$æVöâG&–gB"†–FFVããÂ÷6V7F–öãàÐ¢Ç6V7F–öâ6Æ73Ò&6÷&RÖG&÷×67&VVâ"–CÒ&6÷&TG&÷67&VVâ"&–ÖÆ&VÃÒ$6÷&RG&÷"†–FFVããÂ÷6V7F–öãàÐ¢Ç6V7F–öí·×»h‘éì¶»§q«^u]ÛˆˆYH˜›ØÚÒÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛƒBˆÙ]ƒBˆÜÙXÝ[ÛƒBˆÙXÝ[ÛˆÛ\ÜÏH˜™X]\ØÜ™Y[ˆˆYH˜™X]\ÚØÜ™Y[ˆˆ\šXK[X™[H™X]\ÚˆY[ƒBˆ]ˆÛ\ÜÏH˜™X]Z[›™\ˆƒBˆXY\ˆÛ\ÜÏH˜™X]ZYƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜™X]ÛÜÙHˆ\šXK[X™[H´'t,4,ô.ô,4,´/t`ôcˆ°åÏØ]ÛƒBˆ]ˆÛ\ÜÏH˜™X]Xœ˜[™ÛX[•STVH0­È4(4%t$4&´)´&4+ÏÜÛX[™X]\ÚØÙ]ƒBˆ]ˆÛ\ÜÏHšY\Ý]ÛX[´(t)ô t(ÜÛX[ˆYH˜™X]ØÛÜ™HŒØÙ]ƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜™X]ÛÝ[™ˆ\šXK[X™[H´$´bô.´.ôc´aô.4`´c4-ô,´`ô.ˆ¼'å"Ø]ÛƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜™X]]\ÙHˆ\šXK[X™[H´'ô,4`ô-ô,¸¡hOØ]ÛƒBˆÚXY\ƒBˆ]ˆÛ\ÜÏH˜™X]\›ÙÜ™\ÜÈÜ[´'ô(4'´$ô(4%t(t(HˆYH˜™X]›ÙÜ™\ÜÈŒ	OØÜÜ[O[HYH˜™X]›ÙÜ™\ÜÐ˜\ˆÙ[OÚOÙ]ƒBˆ]ˆÛ\ÜÏH˜™X]\[‹\Ý]ÈÜ[ˆÛ\ÜÏH˜™X]XÛÛX›Ë\Ý]ˆYH˜™X]ÛÛX›ÔÝ]ÓÓP“ÈˆYH˜™X]ÛÛX›È°åÌOØÜÜ[Ü[¼'ê¦HˆYH˜™X][ÛÚ[œÈŒØÜÜ[Ù]ƒBˆØ[˜\ÈYH˜™X]\ÚØ[˜\ÈØØ[˜\ÏƒBˆ]ˆÛ\ÜÏH˜™X]]\Z[´(´$4'È0åÌˆH4%4$´'´&t't'´&H4'ô(4*ô%´'´&Ù]]ˆÛ\ÜÏH™]™[]Ø\ÝˆYH˜™X]]™[Ø\Ýˆ\šXK[]™OHœÛ]HÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[™X][Ý™\›^HˆYH˜™X]Ý\ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆ•STVH0­È4(4%t$4&´)´&4+ÏÜÜ[™X]œ‘\ÚÚƒBˆ´(´,4/ô,4.K4aô`´/´,tbÈ4/ô`4bô,ô,4`´cœ´$ˆ4,´/´-ô-4`ôat-H4/4/´-´/t/ˆ4/ô`4bô,ô/t`ô`´c4-tbtdH4`4,4-ËÜƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYH˜™X]Ý\]Ûˆ´'t,4aô,4`´c4-ô,4,t-t,ÏØ]ÛƒBˆ]ˆÛ\ÜÏHœ™XÛÜ™´&ô`ôaôb4-t-H4/ô`4/´at/´-´-4-t/t.4-NˆˆYH˜™X]Y[P™\ÝŒ	OØÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[™\Ý[\[™[™X][Ý™\›^HˆYH˜™X]™\Ý[ˆY[ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆˆ]K\™\Ý[HšÚXÚÙ\ˆ´%ô$4$t%t$È4'´&´'´'t)ô%t'OÜÜ[ˆ]K\™\Ý[H]H´%tbtdOœ´/ô/´/ôbô`´.´,ÏÚƒBˆ]ˆÛ\ÜÏHœ™\Ý[\ØÛÜ™HÛX[´(4%t%ô(ô&ô+4(´$4(ÜÛX[ˆ]K\™\Ý[HœØÛÜ™HŒØÙ]ƒBˆ]ˆÛ\ÜÏHœ™\Ý[Y]Z[È™X]\™\Ý[Y]Z[ÈÜ[´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ˆˆ]K\™\Ý[H˜™\ÝŒØÜÜ[Ü[´'ô/´.ô`ôaô-t/t/ˆˆ]K\™\Ý[Hœ™]Ø\™ŠÌ<'ê¦OØÜÜ[Ü[´'ô`4/´at/´-´-4-t/t.4-Hˆ]K\™\Ý[Hœ›ÙÜ™\ÜÈŒ	OØÜÜ[Ü[´&´/´/4,t/ˆˆ]K\™\Ý[H›X^ÛÛX›È°åÌOØÜÜ[Ù]ƒBˆ]ˆÛ\ÜÏH˜™X]\™\Ý[\›ÙÜ™\ÜÈˆYH˜™X]™\Ý[›ÙÜ™\ÜÈÙ]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYH˜™X]™\^H´&4,ô`4,4`´c4`t/t/´,´,Ø]Û]ÛˆÛ\ÜÏH^X]ÛˆˆYH˜™X]ÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛƒBˆÙ]ƒBˆÜÙXÝ[ÛƒBˆÙXÝ[ÛˆÛ\ÜÏHšÛÚË\ØÜ™Y[ˆˆYH›™[Û’ÛÚÔØÜ™Y[ˆˆ\šXK[X™[H“™[ÛˆÛÚÈˆY[ƒBˆ]ˆÛ\ÜÏHšÛÚËZ[›™\ˆƒBˆXY\ˆÛ\ÜÏHšÛÚËZYƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHšÛÚÐÛÜÙHˆ\šXK[X™[H´'t,4,ô.ô,4,´/t`ôcˆ°åÏØ]ÛƒBˆ]ˆÛ\ÜÏHšÛÚËXœ˜[™ÛX[•STVH0­È4$4(4&´$4%4*ÏÜÛX[“™[ÛˆÛÚÏØÙ]ƒBˆ]ˆÛ\ÜÏHšY\Ý]ÛX[´(t)ô t(ÜÛX[ˆYHšÛÚÔØÛÜ™HŒØÙ]ƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHšÛÚÔ]\ÙHˆ\šXK[X™[H´'ô,4`ô-ô,¸¡hOØ]ÛƒBˆÚXY\ƒBˆ]ˆÛ\ÜÏHšÛÚË\›ÙÜ™\ÜÈÜ[ˆYHšÛÚÓ]™[›ÙÜ™\ÜÈ“U‘SOØˆYHšÛÚÔ›ÙÜ™\ÜÈŒ	OØÜÜ[O[HYHšÛÚÔ›ÙÜ™\ÜÐ˜\ˆÙ[OÚOÙ]ƒBˆ]ˆÛ\ÜÏHšÛÚË\[‹\Ý]ÈÜ[ˆÛ\ÜÏHšÛÚËXÛÛX›Ë\Ý]ˆYHšÛÚÐÛÛX›ÔÝ]ÓÓP“ÈˆYHšÛÚÐÛÛX›È°åÌOØÜÜ[Ü[¼'ê¦HˆYHšÛÚÔ[ÛÚ[œÈŒØÜÜ[Ù]ƒBˆØ[˜\ÈYH›™[Û’ÛÚÐØ[˜\ÈØØ[˜\ÏƒBˆ]ˆÛ\ÜÏHšÛÚË]\Z[´(ô%4%t(4%´&4$´$4&H8 %4%ô$4)´%t'ô&4(t+0­È4'´(´'ô(ô(t(´&8 %4$´&ô%t(´&4$ˆ4'ô'´(4(´$4&ÏÙ]]ˆÛ\ÜÏH™]™[]Ø\ÝˆYHšÛÚÑ]™[Ø\Ýˆ\šXK[]™OHœÛ]HÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[ÛÚË[Ý™\›^HˆYH›™[Û’ÛÚÔÝ\ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆ•STVH0­È4$4(4&´$4%4*ÏÜÜ[“™[Ûœ’ÛÚÏÚƒBˆ´%ô,4a´-t/ô.4`tc4-ô,4ct/t-t`4,ô/‹t`´/´aô.´`Ëœ´(4,4`t.´,4aô,4.t`tcÈ4.4/´`´/ô`ô`t`´.4,´/´,´`4-t/4cËÜƒBˆ]ˆÛ\ÜÏHšÛÚË[]™[\XÚÙ\ˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHšÛÚÓ]™[™]ˆˆ\šXK[X™[H´'ô`4-t-4bô-4`ôbt.4.H4`ô`4/´,´-t/tc¸ .OØ]ÛˆYHšÛÚÓ]™[X™[´(ô(4'´$´%t't+HÈÌØ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHšÛÚÓ]™[™^ˆ\šXK[X™[H´(t.ô-t-4`ôc´bt.4.H4`ô`4/´,´-t/tc¸ .Ø]ÛÙ]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYHšÛÚÔÝ\]Ûˆ´'t,4aô,4`´c4/ô/´.ôdt`Ø]ÛƒBˆ]ˆÛ\ÜÏHœ™XÛÜ™´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ŽˆˆYHšÛÚÓY[P™\ÝŒØÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[™\Ý[\[™[ÛÚË[Ý™\›^HˆYH›™[Û’ÛÚÔ™\Ý[ˆY[ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆˆ]K\™\Ý[HšÚXÚÙ\ˆ´%ô$4$t%t$È4'´&´'´'t)ô%t'OÜÜ[ˆ]K\™\Ý[H]H´%tbtdOœ´/ô/´/ôbô`´.´,ÏÚƒBˆ]ˆÛ\ÜÏHœ™\Ý[\ØÛÜ™HÛX[´(4%t%ô(ô&ô+4(´$4(ÜÛX[ˆ]K\™\Ý[HœØÛÜ™HŒØÙ]ƒBˆ]ˆÛ\ÜÏHœ™\Ý[Y]Z[ÈÛÚË\™\Ý[Y]Z[ÈÜ[´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ˆˆ]K\™\Ý[H˜™\ÝŒØÜÜ[Ü[´'ô/´.ô`ôaô-t/t/ˆˆ]K\™\Ý[Hœ™]Ø\™ŠÌ<'ê¦OØÜÜ[Ü[´(ô`4/´,´-t/tcˆ]K\™\Ý[H›]™[ŒHÈÌØÜÜ[Ü[´&´/´/4,t/ˆˆ]K\™\Ý[H›X^ÛÛX›È°åÌOØÜÜ[Ù]ƒBˆ]ˆÛ\ÜÏHšÛÚË\™\Ý[[Y]HÜ[´%4.4`t`´,4/ta´.4cÈˆ]K\™\Ý[H™\Ý[˜ÙHŒ4/ØÜÜ[Ü[´&´`4c´.´.ˆ]K\™\Ý[HšÛÚÜÈŒØÜÜ[Ù]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYHšÛÚÔ™\^H´&4,ô`4,4`´c4`t/t/´,´,Ø]Û]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHÛÚË[™^ˆYHšÛÚÓ™^ˆY[´(t.ô-t-4`ôc´bt.4.H4`ô`4/´,´-t/tcØ]Û]ÛˆÛ\ÜÏH^X]ÛˆˆYHšÛÚÒÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛƒBˆÙ]ƒBˆÜÙXÝ[ÛƒBˆÙXÝ[ÛˆÛ\ÜÏH˜ÛÜ™KY›Ü\ØÜ™Y[ˆˆYH˜ÛÜ™Q›ÜØÜ™Y[ˆˆ\šXK[X™[HÛÜ™H›ÜˆY[ƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›ÜZ[›™\ˆƒBˆXY\ˆÛ\ÜÏH˜ÛÜ™KY›ÜZYƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜ÛÜ™Q›ÜÛÜÙHˆ\šXK[X™[H´'t,4,ô.ô,4,´/t`ôcˆ°åÏØ]ÛƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›ÜXœ˜[™ÛX[•STVH0­È4$4(4&´$4%4*ÏÜÛX[ÛÜ™H›ÜØÜ[ˆYH˜ÛÜ™Q›Ü›Û™H´$´%t(4)t't+ô+È4&´'´(4$ÜÜ[Ù]ƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›ÜY\ÛX[´$ô&ô(ô$t&4't$ÜÛX[ˆYH˜ÛÜ™Q›Ü\Œ4/ØÙ]ƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜ÛÜ™Q›Ü]\ÙHˆ\šXK[X™[H´'ô,4`ô-ô,¸¡hOØ]ÛƒBˆÚXY\ƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›ÜX˜\œÈƒBˆ]Ü[´(t(´$4$t&4&ô+4't'´(t(´+ØÝ›Û™ÈYH˜ÛÜ™Q›ÜÝXš[]U^ŒL	OÜÝ›Û™ÏÜÜ[O[HYH˜ÛÜ™Q›ÜÝXš[]P˜\ˆÙ[OÚOÙ]ƒBˆ]Ü[´%ô$4(4+ô%4&4'4'ô(ô&ô+4(t$ØÝ›Û™ÈYH˜ÛÜ™Q›ÜÚ\™ÙU^ŒL	OÜÝ›Û™ÏÜÜ[O[HYH˜ÛÜ™Q›ÜÚ\™ÙP˜\ˆÙ[OÚOÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›Ü\Ý]ÈÜ[´(t)ô t(ˆˆYH˜ÛÜ™Q›ÜØÛÜ™HŒØÜÜ[Ü[´'4$4(t(t$ˆYH˜ÛÜ™Q›ÜX\ÜÈŒOØÜÜ[Ü[ˆYH˜ÛÜ™Q›ÜÛÛX›ÔÝ]´&´'´'4$t'ˆˆYH˜ÛÜ™Q›ÜÛÛX›È°åÌOØÜÜ[Ù]ƒBˆØ[˜\ÈYH˜ÛÜ™Q›ÜØ[˜\ÈØØ[˜\ÏƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›Ü]Ø\ÝˆYH˜ÛÜ™Q›ÜØ\Ýˆ\šXK[]™OHœÛ]HÙ]ƒBˆ]ÛˆÛ\ÜÏH˜ÛÜ™KY›ÜZ[\[ÙHˆYH˜ÛÜ™Q›Ü[\[ÙHˆ\OH˜]Ûˆˆ\ØX›YÜ[¸¥áÜÜ[´&4'4'ô(ô&ô+4(OØÛX[ŒÌ	OÜÛX[Ø]ÛƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›ÜZ[´$´%t%4&4+ô%4(4'ˆ4$´&ô%t$´'ˆ4&4$´'ô(4$4$´'ˆ0­È4'ô(4'´$t&4$´$4&t(t+È4$ô&ô(ô$t%´%OÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[ÛÜ™KY›Ü[Ý™\›^HˆYH˜ÛÜ™Q›ÜÝ\ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆ•STVH0­È4$4(4&´$4%4*ÏÜÜ[ÛÜ™Oœ‘›ÜÚƒBˆ´'ô`4/´,t.4,´,4.t`tcÈ4aô-t`4-t-È4/t-t-4`4,4/ô.ô,4/t-t`´bËœ´(t/´,t.4`4,4.H4ct/t-t`4,ô.4c‹ˆ4(4.4`t.´`ô.H4,ô.ô`ô,t-´-KÜƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYH˜ÛÜ™Q›ÜÝ\]Ûˆ´'t,4aô,4`´c4/ô,4-4-t/t.4-OØ]ÛƒBˆ]ˆÛ\ÜÏH˜ÛÜ™KY›Ü[Y[K\™XÛÜ™Ü[´&ô(ô)ô*4&4&H4(t)ô t(ˆˆYH˜ÛÜ™Q›ÜY[P™\ÝŒØÜÜ[Ü[´$ô&ô(ô$t&4't$ˆYH˜ÛÜ™Q›ÜY[Q\Œ4/ØÜÜ[Ù]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[™\Ý[\[™[ÛÜ™KY›Ü[Ý™\›^HˆYH˜ÛÜ™Q›Ü™\Ý[ˆY[ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆˆ]K\™\Ý[HšÚXÚÙ\ˆ´+ô%4(4'ˆ4(4$4%ô(4(ô*4%t't'ÜÜ[ˆ]K\™\Ý[H]H´+ô-4`4/œ´`4,4-ô`4`ôb4-t/t/ÚƒBˆ]ˆÛ\ÜÏHœ™\Ý[\ØÛÜ™HÛX[´(4%t%ô(ô&ô+4(´$4(ÜÛX[ˆ]K\™\Ý[HœØÛÜ™HŒØÙ]ƒBˆ]ˆÛ\ÜÏHœ™\Ý[Y]Z[ÈÛÜ™KY›Ü\™\Ý[Y]Z[ÈÜ[´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ˆˆ]K\™\Ý[H˜™\ÝŒØÜÜ[Ü[´'ô/´.ô`ôaô-t/t/ˆˆ]K\™\Ý[Hœ™]Ø\™ŠÌ<'ê¦OØÜÜ[Ü[´$ô.ô`ô,t.4/t,ˆ]K\™\Ý[H™\Œ4/ØÜÜ[Ü[´'4,4`t`t,ˆ]K\™\Ý[H›X\ÜÈŒØÜÜ[Ü[´&´/´/4,t/ˆˆ]K\™\Ý[H›X^ÛÛX›È°åÌOØÜÜ[Ü[´'´`t.´/´.ô.´.ˆ]K\™\Ý[HœÚ\™ÈŒØÜÜ[Ù]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYH˜ÛÜ™Q›Ü™\^H´'ô,4-4,4`´c4`t/t/´,´,Ø]Û]ÛˆÛ\ÜÏH^X]ÛˆˆYH˜ÛÜ™Q›ÜÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛƒBˆÙ]ƒBˆÜÙXÝ[ÛƒBˆÙXÝ[ÛˆÛ\ÜÏHœ[˜[K\ØÜ™Y[ˆˆYHœ[˜[QY[ØÜ™Y[ˆˆ\šXK[X™[H”[˜[HY[ˆY[ƒBˆ]ˆÛ\ÜÏHœ[˜[KZ[›™\ˆƒBˆXY\ˆÛ\ÜÏHœ[˜[KZYƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHœ[˜[PÛÜÙHˆ\šXK[X™[H´'t,4,ô.ô,4,´/t`ôcˆ°åÏØ]ÛƒBˆ]ˆÛ\ÜÏHœ[˜[KXœ˜[™ÛX[•STVH0­È4(t'ô'´(4(ÜÛX[”[˜[HY[ØÙ]ƒBˆ]ˆÛ\ÜÏHšY\Ý]ÛX[´(t)ô t(ÜÛX[ˆYHœ[˜[TØÛÜ™HŒØÙ]ƒBˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYHœ[˜[TÛÝ[™ˆ\šXK[X™[H´$´bô.´.ôc´aô.4`´c4-ô,´`ô.ˆ¼'å"Ø]ÛƒBˆÚXY\ƒBˆ]ˆÛ\ÜÏHœ[˜[K\›ÙÜ™\ÜÈÜ[ˆYHœ[˜[TÚÝX™[´(ô%4$4(HÈOØˆYHœ[˜[PÛÛX›ÈÓÓP“È0åÌOØÜÜ[O[HYHœ[˜[TÙ\šY\Ô›ÙÜ™\ÜÈÙ[OÚOÙ]ƒBˆ]ˆÛ\ÜÏHœ[˜[K\[‹\Ý]ÈÜ[´$ô'´&ô*ÈˆYHœ[˜[QÛØ[ÈŒØÜÜ[Ü[´(t%t&t$´*ÈˆYHœ[˜[TØ]™\ÈŒØÜÜ[Ü[¼'ê¦HˆYHœ[˜[T[ÛÚ[œÈŒØÜÜ[Ù]ƒBˆØ[˜\ÈYHœ[˜[QY[Ø[˜\ÈØØ[˜\ÏƒBˆ]ˆÛ\ÜÏHœ[˜[K[Z[™ˆYHœ[˜[SZ[™´$´(4$4(´$4(4+4't$4$t&ô+´%4$4%t(Ù]ƒBˆ]ˆÛ\ÜÏHœ[˜[K\ÝÚ\KZ[ˆYHœ[˜[TÝÚ\R[´(t$´$4&t'ô't&4'´(ˆ4'4+ô)ô$4&ˆ4)´%t&ô&Ù]ƒBˆ]ˆÛ\ÜÏH™]™[]Ø\ÝˆYHœ[˜[Q]™[Ø\Ýˆ\šXK[]™OHœÛ]HÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[[˜[K[Ý™\›^HˆYHœ[˜[TÝ\ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆ•STVH0­ÈÔÔ•ÏÜÜ[”[˜[Oœ‘Y[ÚƒBˆ´(t,´,4.t/ô/t.4.ˆ4`ô,ô.ô`È4,´/´`4/´`‹œ´'´,t/4,4/t.4,´`4,4`´,4`4cÈ4.4-ô,4,t-t.H4`t-t`4.4c‹ÜƒBˆ]ˆÛ\ÜÏHœ[˜[K[[ÙKX˜YÙHH4(ô%4$4(4'´$ˆ0­ÈÈ4'ô%t(4$´*ô)H8 %4(´(4%t't&4(4'´$´&´$Ù]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYHœ[˜[TÝ\]Ûˆ´'t,4aô,4`´c4`t-t`4.4cØ]ÛƒBˆ]ˆÛ\ÜÏHœ™XÛÜ™´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ŽˆˆYHœ[˜[SY[P™\ÝŒØÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏHœÝ\\[™[™\Ý[\[™[[˜[K[Ý™\›^HˆYHœ[˜[T™\Ý[ˆY[ƒBˆÜ[ˆÛ\ÜÏHœ[™[ZÚXÚÙ\ˆˆ]K\™\Ý[HšÚXÚÙ\ˆ´(t%t(4&4+È4'´&´'´'t)ô%t't$ÜÜ[ˆ]K\™\Ý[H]H´%tbtdOœ´`ô-4,4`ÏÚƒBˆ]ˆÛ\ÜÏHœ™\Ý[\ØÛÜ™HÛX[´(4%t%ô(ô&ô+4(´$4(ÜÛX[ˆ]K\™\Ý[HœØÛÜ™HŒØÙ]ƒBˆ]ˆÛ\ÜÏHœ™\Ý[Y]Z[È[˜[K\™\Ý[Y]Z[ÈÜ[´&ô`ôaôb4.4.H4`4-t-ô`ô.ôc4`´,4`ˆˆ]K\™\Ý[H˜™\ÝŒØÜÜ[Ü[´'ô/´.ô`ôaô-t/t/ˆˆ]K\™\Ý[Hœ™]Ø\™ŠÌ<'ê¦OØÜÜ[Ü[´$ô/´.ôbÈÈ4`t-t.t,´bÈˆ]K\™\Ý[H™ÛØ[ÈŒÈØÜÜ[Ü[´'4,4.´`Kˆ4.´/´/4,t/ˆˆ]K\™\Ý[H›X^ÛÛX›È°åÌOØÜÜ[Ù]ƒBˆ]ˆÛ\ÜÏHœ[˜[K^”Õ’RÑTˆU‘SˆYHœ[˜[T™\Ý[]™[ˆ]K\™\Ý[H›]™[ŒOØˆÜ[°­Èˆ]K\™\Ý[HžŒØÜÜ[Ù]ƒBˆ]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYHœ[˜[T™\^H´&4,ô`4,4`´c4`t/t/´,´,Ø]Û]ÛˆÛ\ÜÏH^X]ÛˆˆYHœ[˜[RÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛƒBˆÙ]ƒBˆÜÙXÝ[ÛƒBˆÙXÝ[ÛˆÛ\ÜÏHœÛÛÛ‹\ØÜ™Y[ˆˆYHœÛÛÛ”ØÜ™Y[ˆˆ\šXK[X™[YžOHœÛÛÛ•]HˆY[ƒBˆXY\ˆÛ\ÜÏHœÛÛÛ‹ZXY\ˆ]ÛˆÛ\ÜÏHšXÛÛ‹X]ÛˆˆYH˜ÛÜÙTÛÛÛˆˆ\šXK[X™[H´'t,4-ô,4-4,ˆ4.´,4`´,4.ô/´,È¸ .OØ]Û•[T^OØÜ[´(t.´/´`4/ÜÜ[ÚXY\ƒBˆ]ˆÛ\ÜÏHœÛÛÛ‹XÛÛ[]ˆYHœÛÛÛ\Ù]Ü[ˆÛ\ÜÏHœÛÛÛ‹X˜YÙH´$ˆ4`4,4-ô`4,4,t/´`´.´-OÜÜ[HYHœÛÛÛ•]HÚOYHœÛÛÛ”ÝX]HÜÛ\ÜÏHœÛÛÛ‹[Y\ÜØYÙH´%ô-4-t`tc4`t.´/´`4/ˆ4/ô/´cô,´.4`´`tcÈ4/t/´,´,4cÈ4.4,ô`4,Ü]ÛˆÛ\ÜÏHœ^KX]Ûˆ\™ÙHˆYHœÛÛÛ’ÛYH´'t,4,ô.ô,4,´/t`ôcØ]ÛÙ]ƒBˆÜÙXÝ[ÛƒBˆØÜš\Ü˜ÏH‹‹Ü[[YKXÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜØ]™K[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÝ[YÜ˜[KX]]šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÙ]K\›ÝšY\‹XÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹[[Ù[šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÙ]K\›ÝšY\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Ü›Ùš[KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Ü›ÙÜ™\ÜÚ[Û‹XÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Ü›ÙÜ™\ÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹ÜÝ]\ÝXÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹ÛX\Ý\žKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Ý]\ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Þ[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹ØXÚY]™[Y[ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹ÚÛYKšœÏÝLŒŒLŒKLˆÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹Y]KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KØ[˜[]XÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KØÝ\œ™[˜ÞK[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ™]Ø\™[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜÚÜØÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜÚÜÜÚÜ[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^[Y[[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜÚÜÙØ[YK\ÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÜ^Y\‹ØÚ[[™Ù\ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KØ]Y[Ë[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÚ\XË[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØÛÜ™KÙØ[YK\Ù\ÜÚ[Û‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[YKXY\\œËØ˜\ÙKXY\\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[YKXY\\œËØØ[˜\ËXY\\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[YKXY\\œËÜ^ž›KXY\\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[YKXY\\œËÜÜÜËXY\\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËšœÏÝLŒŒLŒKY]™[ZÜš^›Û‹LHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[YK\Ú[šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KØÛÜ™KÙØ[YK[ÛÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KØÛÜ™KÚ[œ][X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KØÛÜ™KØØ[Y\˜KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KØÛÜ™KÙØ[YK\Ý]KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KÜÞ\Ý[\ËÜ\XÛ\ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KÜÞ\Ý[\ËØÛÛ\Ú[Û‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KÜÞ\Ý[\ËÜØÛÜ™KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\˜ØYKY[™Ú[™KÙ[]Y\ËÙ[]KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ›ØÚËYÜšYÜÚÜÜÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø›ØÚËYÜšYšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹\˜XÙKØÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹\˜XÙKÜÚÜÜÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹\˜XÙKÜÞ\Ý[\ËÙØ\˜YÙKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹\˜XÙKÜ™[™\™\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹\˜XÙKÙØ[YKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ™X]Y\ÚØÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ™X]Y\ÚÜÚÜÜÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ™X]Y\ÚÙ[™Ú[™KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ™X]Y\ÚÜ™[™\™\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ™X]Y\ÚÙØ[YKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËØÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÜÚÜÜÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙ[]Y\ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙ[™Ú[™KØÛÛ\Ú[Û‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙ[™Ú[™KØØ[Y\˜KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙ[™Ú[™KÜ\ÚXÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙ[™Ú[™KÙØ[YK[ÛÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÜ™[™\™\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹ZÛÚËÙØ[YKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØÛÜ™KY›ÜÙØ[YKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ØÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÚÜÜÚÜšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÜÜËY[™Ú[™KØÛÜ™KÝ˜Z™XÝÜžKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÜÜËY[™Ú[™KØÛÜ™KÜ\ÚXÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÜÜËY[™Ú[™KØÛÜ™KØÛÛ\Ú[Û‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[Ü\ÚXÜËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÙÛØ[\Þ\Ý[KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ØZKÚÙY\\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÜÜËY[™Ú[™KÜÞ\Ý[\ËÜØÛÜ™KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÜÜÜËY[™Ú[™KÜÞ\Ý[\ËÜ™\Ý[šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[Ü™[™\™\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[˜[KYY[ÙØ[YKšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÝšXÚË[X‹ÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÛ™[Û‹YšYÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØÛÜ™KY›ÜÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØÛÛÜ‹\ÛÜÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜ[™Ë\Û™Ë\\ÚÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÝ›ÚYØ\šœÏÝLŒŒLŒKY]™[ZÜš^›Û‹LHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÝ›ÚYÙØ[YKšœÏÝLŒŒLŒKY]™[ZÜš^›Û‹LHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÝ[K]š[ËÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØÛÛÜ‹\[ÙKÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØÛÜ™K\ÚÝÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÝ[˜›ÛÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËØ\œ›ÝËY\ØØ\KÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÚÛÜ\ÚÝÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ÙØ[Y\ËÜÝ[\šYKÙØ[YKšœÏÝLŒŒLŒKLHÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ØÛÛ™šYËØYZ[‹XÛÛ™šYËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ÜÙ\šXÙ\ËØYZ[‹X]]šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ÜÙ\šXÙ\ËØYZ[‹Y]™[[ÙËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ÜÙ\šXÙ\ËØYZ[‹XXÝ[Û‹[X[˜YÙ\‹šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ÜÙ\šXÙ\ËØYZ[‹Y]KšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ØÛÛ\Û™[ËØYZ[‹]šY]ËšœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹ØYZ[‹ÜYÙ\ËØYZ[‹\[™[šœÈÜØÜš\ƒBˆØÜš\Ü˜ÏH‹‹Ø\šœÏÝLŒŒLŒK]›ÚY\X›XËLHÜØÜš\ƒBØ›ÙOƒBÚ[ƒB
